@@ -9,7 +9,9 @@ library(purrr)
 load_data <- function(){
   library(readxl)
   #### Import data ####
-  xrf_data_path <- "/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data"
+  script_path <- getwd()
+  xrf_data_path <- paste(script_path, "/data/XRF Data", sep="")
+  # xrf_data_path <- "/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data"
   
   f_norm200mu <- read_excel(paste(xrf_data_path,
                                   "/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_normZnNi.xlsx", 
@@ -85,6 +87,7 @@ select_top_varves <- function(df){
   short_df <- df %>%
     dplyr::filter(`position..mm.` < 350)
 }
+
 # Function to create downcore lineplots
 plot_elements <- function(df, df_name = NULL, output_dir = NULL) {
   library(ggplot2)

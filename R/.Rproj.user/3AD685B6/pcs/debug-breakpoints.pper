@@ -1,0 +1,36 @@
+{
+    "debugBreakpointsState": {
+        "breakpoints": [
+            {
+                "id": 32,
+                "path": "~/Documents/Unibe/MasterThesis/R/xrf_functions.R",
+                "line_number": 581,
+                "function_steps": "9",
+                "function_name": "visualize_clusters",
+                "state": 1,
+                "editor_state": 1,
+                "editor_line_number": 581,
+                "is_pending_debug_completion": false,
+                "needs_updated_steps": false,
+                "type": 0,
+                "is_package_breakpoint": false,
+                "package_name": ""
+            },
+            {
+                "id": 79,
+                "path": "~/Documents/Unibe/MasterThesis/R/xrf_functions.R",
+                "line_number": 200,
+                "function_steps": "10,4,12",
+                "function_name": "plot_individual",
+                "state": 1,
+                "editor_state": 1,
+                "editor_line_number": 200,
+                "is_pending_debug_completion": false,
+                "needs_updated_steps": false,
+                "type": 0,
+                "is_package_breakpoint": false,
+                "package_name": ""
+            }
+        ]
+    }
+}

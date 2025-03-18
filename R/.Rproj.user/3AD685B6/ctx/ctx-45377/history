@@ -1,0 +1,512 @@
+15/cos(30/360)
+15/cos(45/360)
+15/sin(45/360)
+15/sin(15/360)
+sin(30)
+sin(pi)
+101.3*exp(-0.029*9.81*5000/8.314/298)
+1013*exp(-0.029*9.81*5000/8.314/298)
+1013*exp(-0.029*9.81*5000/8.314/(298-50))
+c(1,t_exp)
+# initialising parameters
+t_exp <- 1000
+# initialising parameters
+t_exp <- 1000
+c(1,t_exp)
+c(1:t_exp)
+N_inventory <- array(dim = length(t_exp))
+N_inventory
+N_inventory <- array(dim = c(0:t_exp))
+N_inventory
+N_inventory <- array(data = NA, dim = c(1,1000))
+View(N_inventory)
+# initialising parameters
+t_exp <- 1000
+tau <- 100
+N_init <- 0
+N_inventory <- array(data = NA, dim = c(1,1000))
+pulse_1 <- 1000
+N_inventory[1,3]
+t_exp <- 1000
+tau <- 100
+N_init <- 0
+N_inventory <- array(data = NA, dim = c(1,1000))
+# ex
+pulse_1 <- 1000
+N_inventory[1,i] <- N_init
+# initialising parameters
+t_exp <- 1000
+tau <- 100
+N_init <- 0
+N_inventory <- array(data = NA, dim = c(1,1000))
+# ex
+pulse_1 <- 1000
+N_inventory[1,0] <- N_init
+for(i in c(0:t_exp)){
+if(i == 100){
+E <- pulse_1
+else{
+# initialising parameters
+t_exp <- 1000
+tau <- 100
+N_init <- 0
+N_inventory <- array(data = NA, dim = c(1,1000))
+# ex
+pulse_1 <- 1000
+N_inventory[1,0] <- N_init
+for(i in c(0:t_exp)){
+if(i == 100){
+E <- pulse_1
+}
+else{
+E <- 0
+}
+N_inventory[1,i] <- N_inventory[1,i-1] + E - 1/tau*N_inventory[1,i-1]
+}
+t_exp <- 1000
+tau <- 100
+N_init <- 0
+N_inventory <- array(data = NA, dim = c(1,1000))
+# ex
+pulse_1 <- 1000
+N_inventory[1,0] <- N_init
+for(i in c(1:t_exp)){
+if(i == 100){
+E <- pulse_1
+}
+else{
+E <- 0
+}
+N_inventory[1,i] <- N_inventory[1,i-1] + E - 1/tau*N_inventory[1,i-1]
+}
+N_inventory[1,0] <- N_init
+N_inventory[1,0] <- 10
+N_inventory[1,1] <- 10
+# initialising parameters
+t_exp <- 1000
+tau <- 100
+N_init <- 0
+N_inventory <- array(data = NA, dim = c(1,1000))
+# ex
+pulse_1 <- 1000
+N_inventory[1,1] <- N_init
+for(i in c(2:t_exp)){
+if(i == 100){
+E <- pulse_1
+}
+else{
+E <- 0
+}
+N_inventory[1,i] <- N_inventory[1,i-1] + E - 1/tau*N_inventory[1,i-1]
+}
+View(N_inventory)
+ggplot(data = N_inventory) + geom_curve()
+library(ggplot2)
+ggplot(data = N_inventory) + geom_curve()
+df_ex1 <- data.frame(N_inventory)
+ggplot(data = df_ex1) + geom_curve()
+View(df_ex1)
+plot(N_inventory)
+plot(df_ex1)
+df_ex1 <- data.frame(N_inventory)
+ggplot(data = df_ex1, aes(x=x, y=y)) + geom_curve()
+df_ex1[1]
+df_ex1[:,1]
+df_ex1 <- data.frame(N_inventory)
+View(df_ex1)
+df_ex1[1,:]
+df_ex1$
+df_ex1 <- data.frame(x = c(1:1000),
+y = N_inventory[1,:])
+df_ex1 <- data.frame(x = c(1:1000),
+y = N_inventory[1,])
+ggplot(data = df_ex1, aes(x=df_ex1$x, y=df_ex1$y)) + geom_curve()
+dev.off
+ggplot(data = df_ex1, aes(x=df_ex1$x, y=df_ex1$y)) + geom_curve()
+pulse_1 <- 1000
+source("~/Documents/Unibe/Courses/Carbon_Cycle/Exercices/ex4/ex4.R")
+ggplot(data = df_ex1, aes(x=df_ex1$x, y=df_ex1$y)) + geom_curve()
+ggplot(data = df_ex1, aes(x=x, y=y)) + geom_curve()
+ggplot(data = df_ex1, aes(x=x, y=y)) + geom_point()
+ggplot(data = df_ex1, aes(x=x, y=y)) + geom_line()
+N_inventory <- array(data = NA, dim = c(1,1000))
+N_inventory[1,1] <- N_init
+pulse_2 <- 10
+for(i in c(2:t_exp)){
+if(i <= 100){
+E <- pulse_2
+}
+else{
+E <- 0
+}
+N_inventory[1,i] <- N_inventory[1,i-1] + E - 1/tau*N_inventory[1,i-1]
+}
+N_inventory_2 <- array(data = NA, dim = c(1,1000))
+N_inventory_2[1,1] <- N_init
+pulse_2 <- 10
+for(i in c(2:t_exp)){
+if(i <= 100){
+E <- pulse_2
+}
+else{
+E <- 0
+}
+N_inventory_2[1,i] <- N_inventory_2[1,i-1] + E - 1/tau*N_inventory_2[1,i-1]
+}
+df_ex2 <- data.frame(x = c(1:t_exp),
+y = N_inventory_2[1,])
+ggplot(data = df_ex2, aes(x=x, y=y)) + geom_line()
+N_inventory_2 <- array(data = NA, dim = c(1,1000))
+N_inventory_2[1,1] <- N_init
+pulse_2 <- 10
+E <- 0
+# loop
+for(i in c(2:t_exp)){
+if(i <= 100){
+E <- pulse_2
+}
+else{
+E <- 0
+}
+N_inventory_2[1,i] <- N_inventory_2[1,i-1] + E - 1/tau*N_inventory_2[1,i-1]
+}
+df_ex2 <- data.frame(x = c(1:t_exp),
+y = N_inventory_2[1,])
+ggplot(data = df_ex2, aes(x=x, y=y)) + geom_line()
+N_inventory_2 <- array(data = NA, dim = c(1,1000))
+N_inventory_2[1,1] <- N_init
+pulse_2 <- 10
+# loop
+for(i in c(2:t_exp)){
+if(i >= 100){
+E <- pulse_2
+}
+else{
+E <- 0
+}
+N_inventory_2[1,i] <- N_inventory_2[1,i-1] + E - 1/tau*N_inventory_2[1,i-1]
+}
+df_ex2 <- data.frame(x = c(1:t_exp),
+y = N_inventory_2[1,])
+ggplot(data = df_ex2, aes(x=x, y=y)) + geom_line()
+# ex2
+# initialisation
+N_init2 <- 0
+length(t_exp)
+length(N_inventory)
+step_change <- (emission_end-emission_init)/length(N_inventory_3)
+emission_init <- 0
+emission_end <- 20
+step_change <- (emission_end-emission_init)/length(N_inventory_3)
+# ex3
+N_init3 <- 0
+N_inventory_3 <- array(data = NA, dim = c(1,t_exp))
+N_inventory_3[1,1] <- N_init3
+emission_init <- 0
+emission_end <- 20
+step_change <- (emission_end-emission_init)/length(N_inventory_3)
+help(approx)
+x_range <- c(1,t_exp)
+y_range <- c(emission_init,emission_end)
+approx(x_range,y_range, increment, method = 'linear')
+increment <- NA
+approx(x_range,y_range, increment, method = 'linear')
+approx(x_range,y_range, method = 'linear')
+approx(y_range, method = 'linear', n = t_exp)
+test=approx(c(1,1000), c(0,20), xout=1:1000)
+View(test)
+test=approx(c(1,1000), c(0,20), xout=1:100)
+test=approx(c(1,1000), c(0,20))
+test=approx(c(1,1000), c(0,20), xout=1:1000)
+approx(c(1,1000), c(0,20), xout=1:1000)$y
+step_array <- approx(x_range, y_range, xout = seq(1:t_exp), method = 'linear')
+View(step_array)
+step_array <- approx(x_range, y_range, xout = seq(1:t_exp), method = 'linear')$y
+step_array <- approx(x_range, y_range, xout = seq(1:t_exp), method = 'linear')$y
+step_array <- approx(x_range, y_range, xout = seq(1:t_exp), method = 'linear')$y
+step_array
+# loop
+for(i in c(2:t_exp)){
+E <- step_array[i-1] + step_array[i]
+N_inventory_3[1,i] <- N_inventory_3[1,i-1] + E - 1/tau*N_inventory_3[1,i-1]
+}
+df_ex3 <- data.frame(x = c(1:t_exp),
+y = N_inventory_3[1,])
+ggplot(data = df_ex3, aes(x=x, y=y)) + geom_line()
+View(df_ex3)
+df_all <- bind_cols(df_ex1$y, df_ex2$y, df_ex3$y)
+library(dplyr)
+df_all <- bind_cols(df_ex1$y, df_ex2$y, df_ex3$y)
+View(df_all)
+ggplot(data = df_all, aes(x=x, y=y)) + geom_line()
+df_all <- bind_cols(x = c(1:t_exp),
+y = c(df_ex1$y, df_ex2$y, df_ex3$y))
+df_all <- bind_cols(x = c(1:t_exp),
+y = df_ex1$y, df_ex2$y, df_ex3$y)
+ggplot(data = df_all, aes(x=x, y=y)) + geom_line()
+df_all <- bind_cols(x = c(1:t_exp),
+df_ex1$y, df_ex2$y, df_ex3$y)
+ggplot(data = df_all, aes(x=x, y=y)) + geom_line()
+ggplot(data = df_all, aes(x=x)) + geom_line()
+ggplot(data = df_all, aes(x=x, y=value) + geom_line()
+ggplot(data = df_all, aes(x=x, y=value)) + geom_line()
+df_all <- melt(df_all)
+library(tidyr)
+df_all <- melt(df_all)
+df_all <- gather(df_all)
+ggplot(data = df_all, aes(x=x, y=)) + geom_line()
+View(df_all)
+df_all <- bind_cols(x = c(1:t_exp),
+df_ex1$y, df_ex2$y, df_ex3$y)
+View(df_all)
+df_long = df_all %>%
+mutate(id = 1:nrow(.)) %>%
+gather(id.vars, values, -id)
+df_long %>%
+ggplot(aes(x = values, y = id, group = id.vars, color = id.vars)) +
+geom_line(size = 1)
+df_long %>%
+ggplot(aes(x = id, y = values, group = id.vars, color = id.vars)) +
+geom_line(size = 1)
+df_all <- bind_cols(df_ex1$y, df_ex2$y, df_ex3$y)
+ggplot(data = df_all, aes(x=x, y=)) + geom_line()
+df_long = df_all %>%
+mutate(id = 1:nrow(.)) %>%
+gather(id.vars, values, -id)
+df_long %>%
+ggplot(aes(x = id, y = values, group = id.vars, color = id.vars)) +
+geom_line(size = 1)
+class(df_all)
+class(df_ex1)
+help("mutate")
+data <- read.table("MV_data.txt")
+data <- read.table("MV_data.txt")
+pwd()
+help.search("working directory")
+getwd
+data <- read.table("MV_data.txt")
+## Define a vector of length 100, initialized with NA
+## (not available = not defined).
+vec <- array(NA,c(100))
+## Fill up first 25 elements of 'vec' with value 6.
+vec[1:25] <- 6
+## Fill up elements 66:100 with value -20.
+vec[66:100] <- -20
+vec
+## A.
+## Search last element defined before gap and store its position ('last').
+## (Of course, we already know the value of 'last' (25). But we're
+## here to learn something...)
+last <- 1
+defined <- TRUE
+while (defined){
+if (is.na(vec[last+1])){
+defined <- FALSE
+} else {
+last <- last+1
+}
+}
+## One may omit the boolean variable 'defined' and directly write:
+last <- 1
+while (!is.na(vec[last+1])){
+last <- last + 1
+}
+## B.
+## Search first element defined after gap and store its position ('first').
+first <- last + 1
+while (is.na(vec[first])){
+first <- first + 1
+}
+## C.
+## Loop through missing elements and linearly interpolate to its position.
+a <- vec[last]
+step <- (vec[first] - vec[last]) / (first - last)
+for (i in (last+1):(first-1)){
+vec[i] <- a + step * (i-last)
+}
+## Alternative using R intrinsic function 'approx'
+xout <- 1:length(vec)
+vec.interpol <-approx( xout, vec, xout, method="linear"  )$y
+vec.interpol
+?approx
+view(xout)
+View(xout)
+xout
+## Plot to check if interpolation is correct.
+## Intrinsic function 'plot' requires the following arguments:
+## 1st argument: vecor of x-values
+## 2nd argument: vecor of y-values (must be of same length as x-value vector)
+## more arguments: type help(plot)
+plot(seq(length(vec)),vec,type='l')
+lines(xout, vec.interpol,col='steelblue')  # these variables are only defined when alternative method is activated
+## Plot to check if interpolation is correct.
+## Intrinsic function 'plot' requires the following arguments:
+## 1st argument: vecor of x-values
+## 2nd argument: vecor of y-values (must be of same length as x-value vector)
+## more arguments: type help(plot)
+plot(seq(length(vec)),vec,type='l')
+lines(xout, vec.interpol,col='steelblue')  # these variables are only defined when alternative method is activated
+## Load data and store as 'table'.
+## check the file first to see what the na.strings are
+table <- read.table("co2_mm_mlo.csv",skip=39,sep=',',header=TRUE,na.strings=c('-1','-9.99','-0.99'))
+(10^(-5.88))^2*2000/(0.03*10^(-5.88)*(10^(-9.04)+10^(-5.88)))
+10^(-5.88)
+1.318257e-06 ^2
+(1.318257e-06)^2
+1.737802e-12 * 2000
+3.475604e-09/0.03
+1.158535e-07/10^(-5.88)
+0.08788387/(10^(-9.04)+10^(-5.88))
+H <- 10^-5.88
+DIC <- 2000
+k0 <- 0.03
+k1 <- 10^-5.88
+k2 <- 10^-9.04
+pco2 <- H*DIC/(k0*k1*(K2+H))
+pco2 <- H*DIC/(k0*k1*(k2+H))
+pco2 <- H^2*DIC/(k0*k1*(k2+H))
+pco2/10e6
+H <- 10^-8
+pco2 <- H^2*DIC/(k0*k1*(k2+H))
+k0 <- 0.03*1000
+k0 <- 0.03*1000000
+H <- 10^-5.88
+pco2 <- H^2*DIC/(k0*k1*(k2+H))
+H <- 10^-8
+pco2 <- H^2*DIC/(k0*k1*(k2+H))
+H <- 10^-5.88
+pco2 <- H^2*DIC/(k0*k1*(k2+H))
+pco2
+pco2*10e6
+dic <- 2000e-6
+k0 <- 0.03
+pco2 <- H^2*dic/(k0*k1*(k2+H))
+dic <- 2000e-6
+k0 <- 0.03
+k1 <- 10^-5.88
+k2 <- 10^-9.04
+H <- 10^-5.88
+pco2 <- H^2*DIC/(k0*k1*(k2+H))
+dic <- 2000e-6
+k0 <- 0.03
+k1 <- 10^-5.88
+k2 <- 10^-9.04
+H <- 10^-5.88
+pco2 <- H^2*dic/(k0*k1*(k2+H))
+dic <- 2000e-6
+k0 <- 0.03
+k1 <- 10^-5.88
+k2 <- 10^-9.04
+H <- 10^-8
+pco2 <- H^2*dic/(k0*k1*(k2+H))
+-1.4*250*10^15 /12
+0.209 * 1.7*10^20
+-2.916667e+16/3.553e+19
+357-315
+42/5
+8 *14.5e22/(4.2e3*1000*43)
+setwd("~/Documents/Unibe/MasterThesis/R")
+f_raw200mu <- read.csv("./data/XRF data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct.xlsx")
+f_raw200mu <- read.csv("./data/XRF data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct.xlsx")
+f_raw200mu <- read.csv("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct.xlsx")
+f_raw200mu <- read.delim("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct.xlsx",)
+f_raw200mu <- read.delim("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct.xlsx")
+f_raw200mu <- read.delim("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct.xlsx",skipNul = T)
+f_raw200mu <- read.delim("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct_df.xlsx")
+f_raw200mu <- read.delim("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct_df.xlsx", col.names = F)
+f_raw200mu <- read.delim("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct_df.xlsx", row.names = F)
+f_raw200mu <- read.delim("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct_df.xlsx")
+f_raw200mu <- read_excel("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct_df.xlsx")
+install.packages("read_excel")
+?read_xlsx
+library(readxl)
+library(readxl)
+f_raw200mu <- read_excel("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct_df.xlsx")
+f_raw200mu <- f_raw200mu[-c(Voltage)]
+class(f_raw200mu)
+library(dplyr)
+f_raw200mu <- data.frame(f_raw200mu)
+View(f_raw200mu)
+df <- f_raw200mu %>% select(-one_of('voltage','amperage','CoreID','SectionID','RepID'))
+df <- f_raw200mu %>% select(-one_of('Voltage','Amperage','CoreID','SectionID','RepID'))
+plots <- list()
+library(ggplot2)
+length(df)
+df[[3]]
+plots[i] <-
+df %>%
+ggplot(aes(position..mm.,df[[i]]))
+seq(length(df))
+for(i in seq(length(df))){
+print(i)
+}
+plots[[i]] <-
+df %>%
+ggplot(aes(position..mm.,df[[i]]))
+plots <- list()
+for(i in seq(length(df))){
+plots[[i]] <-
+df %>%
+ggplot(aes(position..mm.,df[[i]]))
+}
+print(plots[[4]])
+plots[[i]] <-
+df %>%
+ggplot(aes(position..mm.,df[[i]])) +
+geom_line
+plots[[i]] <-
+df %>%
+ggplot(aes(position..mm.,df[[i]])) +
+geom_line()
+print(plots[[4]])
+plots[[i]] <-
+df %>%
+ggplot(aes(position..mm.,.data[[i]])) +
+geom_line()
+print(plots[[4]])
+plots <- list()
+# Get names of columns to plot (excluding 'position..mm.')
+columns_to_plot <- names(df)[names(df) != "position..mm."]
+for(i in seq_along(columns_to_plot)){
+plots[[i]] <-
+df %>%
+ggplot(aes(x = position..mm., y = .data[[columns_to_plot[i]]])) +
+geom_point() +
+labs(title = columns_to_plot[i], x = "Position (mm)", y = columns_to_plot[i])
+}
+print(plots[[4]])
+for(i in seq_along(columns_to_plot)){
+plots[[i]] <-
+df %>%
+ggplot(aes(x =.data[[columns_to_plot[i]]], y =  position..mm.)) +
+geom_line() +
+labs(title = columns_to_plot[i], x = "Position (mm)", y = columns_to_plot[i])
+}
+print(plots[[4]])
+plots[[i]] <-
+df %>%
+ggplot(aes(x = position..mm., y = .data[[columns_to_plot[i]]])) +
+geom_line() +
+labs(title = columns_to_plot[i], x = "Position (mm)", y = columns_to_plot[i]) +
+coord_flip()
+print(plots[[4]])
+for(i in seq_along(columns_to_plot)){
+plots[[i]] <-
+df %>%
+ggplot(aes(x = position..mm., y = .data[[columns_to_plot[i]]])) +
+geom_line() +
+labs(title = columns_to_plot[i], x = "Position (mm)", y = columns_to_plot[i]) +
+coord_flip()
+}
+print(plots[[4]])
+print(plots)
+f_raw500mu <- read_excel("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_norm.xlsx")
+f_norm500mu <- read_excel("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_norm.xlsx")
+f_raw200mu <- read_excel("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct_df.xlsx")
+f_norm200mu <- read_excel("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_norm.xlsx")
+f_raw500mu <- read_excel("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.5mm_Cr_Results/POS-22-20_0.5mm_Cr_slct.xlsx")
+f_norm500mu <- read_excel("/Users/maxshore/Documents/Unibe/MasterThesis/R/data/XRF Data/POS-22-20_0.5mm_Cr_Results/POS-22-20_0.5mm_Cr_norm.xlsx")
+data <- list(f_raw200mu,f_norm200mu,f_raw500mu,f_norm500mu)
+setwd("~/Documents/Unibe/Courses_MA3/Climatology_III/poster")
+library(rbacon)
+install.packages("rbacon")

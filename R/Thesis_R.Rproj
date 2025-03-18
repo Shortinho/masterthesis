@@ -1,0 +1,16 @@
+Version: 1.0
+ProjectId: 18d62fb2-4c10-41b4-8cf8-83d91c9ecea5
+
+RestoreWorkspace: Default
+SaveWorkspace: Default
+AlwaysSaveHistory: Default
+
+EnableCodeIndexing: Yes
+UseSpacesForTab: Yes
+NumSpacesForTab: 2
+Encoding: UTF-8
+
+RnwWeave: Sweave
+LaTeX: pdfLaTeX
+
+ProjectName: Thesis_R

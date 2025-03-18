@@ -1,0 +1,27 @@
+{
+    "id": "8DF8C700",
+    "path": "~/Documents/Unibe/MasterThesis/R/xrf_functions.R",
+    "project_path": "xrf_functions.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": true,
+    "created": 1736429567531.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "686,1",
+        "scrollLine": "681"
+    },
+    "folds": "8|24|39|0|\n42|31|59|0|\n62|26|69|0|\n72|32|79|0|\n82|34|86|0|\n88|66|124|0|\n139|29|141|2|\n211|71|299|0|\n300|73|383|2|\n316|31|382|4|\n386|33|397|0|\n413|32|420|0|\n423|131|505|0|\n509|71|552|0|\n554|80|598|0|\n600|90|677|0|\n",
+    "lastKnownWriteTime": 1741974590,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1741974867480,
+    "read_only": false,
+    "read_only_alternatives": []
+}

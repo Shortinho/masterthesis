@@ -30,6 +30,21 @@
                 "type": 0,
                 "is_package_breakpoint": false,
                 "package_name": ""
+            },
+            {
+                "id": 80,
+                "path": "~/Documents/Unibe/MasterThesis/masterthesis/R/xrf_functions.R",
+                "line_number": 335,
+                "function_steps": "14,4,6",
+                "function_name": "plot_individual_top",
+                "state": 1,
+                "editor_state": 1,
+                "editor_line_number": 335,
+                "is_pending_debug_completion": false,
+                "needs_updated_steps": false,
+                "type": 0,
+                "is_package_breakpoint": false,
+                "package_name": ""
             }
         ]
     }

@@ -16,6 +16,10 @@ rm(df_list)
 # Filter out the top portion
 df_l <- map(df_l, select_top_varves)
 
+# Select elements
+all_elements <- c("Al", "Si", "P", "S", "K", "Ca", "Ti", "Mn", "Fe", "Ni", "Zn", "Rb", "Sr", "Zr", "Ba")
+df_l_slct_elmnt <- map(df_l, ~select_elements(.x, all_elements))
+
 # Create and save correlation maps
 map(names(df_l), function(df_name) {
   pdf(paste0("plots/corr_maps_top/correlation_map_toppart", df_name, ".pdf"))
@@ -35,15 +39,20 @@ ratios <- map(df_l, compute_ratios)
 
 # Perform PCA
 # Perform PCA and generate plots (no need to scale data beforehand)
-pca_resutls <- map2(df_l, names(df_l), ~perform_pca(.x, df_name = .y, 
+pca_resutls <- map2(df_l, names(df_l), ~perform_pca2(.x, df_name = .y, 
                                                     plot_scores = F, 
                                                     plot_loadings = F, 
                                                     print_results = F,
-                                                    output_dir = "plots/PCA_plots_top"))
+                                                    output_dir = "plots/PCA_plots_top2"))
 
-element_plots <- map2(df_l, names(df_l), ~plot_elements(.x, df_name = .y,
-                                                        individual_plots = T,
-                                                        output_dir = "plots/indiv_element_plots_top"))
+
+# element_plots_top <- map2(df_l, names(df_l), ~plot_elements(.x, df_name = .y,
+#                                                             individual_plots = T,
+#                                                             output_dir = "plots/indiv_element_plots_top"))
+# 
+# element_plots_top <- map2(df_l, names(df_l), ~plot_elements(.x, df_name = .y,
+#                                                         individual_plots = T,
+#                                                         output_dir = "plots/indiv_element_plots_top"))
 
 # individual element plots 
 indiv_plotting_top <- map2(df_l, names(df_l), ~plot_individual_top(.x, .y, "plots/individual_top"))

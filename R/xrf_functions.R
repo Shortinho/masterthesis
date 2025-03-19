@@ -81,11 +81,50 @@ make_long_clust <- function(df){
   return(df_long)
 }
 
+# centered log ratio normalization. Input must be from df with count data
+clr_transform <- function(df_count){
+  
+  # select only element values
+  df_no_pos <- df_count %>%
+    dplyr::select(-c('position..mm.'))
+  
+  # calculate geometric mean at each depth (g(z))
+  n <- ncol(df_no_pos)
+  
+  df_clr <- df_no_pos %>%
+    rowwise() %>%
+    mutate(GeometricMean = (prod(c_across(everything())))^(1/n)) %>%
+    mutate(across(everything(), ~ log(.x / GeometricMean))) %>%
+    ungroup() %>%
+    select(-GeometricMean) # Remove the geometric mean column
+  
+  # Print result
+  print(df_clr)
+  return(df_clr)
+}
+
+clr_base <- function(df_counts){
+  library(compositions)
+  df_clr <- df_counts %>%
+    select(-c('postition..mm.')) %>%
+    clr()
+}
 # function to only select top varves
 select_top_varves <- function(df){
   library(dplyr)
   short_df <- df %>%
     dplyr::filter(`position..mm.` < 350)
+}
+
+# give a vector with elements desired and the df
+select_elements <- function(df, elements) {
+  print('The following elements are being kept:')
+  cat(elements, sep=',')
+  cat('\n')
+  cat('\n')
+  df %>%
+    select("position..mm.", all_of(elements))
+  
 }
 
 # Function to create downcore lineplots
@@ -163,10 +202,11 @@ plot_individual <- function(df, df_name = NULL, output_dir = NULL){
             aspect.ratio = 5) +
       coord_flip() +
       scale_x_reverse()
+    path_prfx <- getwd()
     path <- "/Users/maxshore/Documents/Unibe/MasterThesis/R/data/POS-22-20_highresruler_copy_min_crpd.jpg"
     
     # read the jpef file from device
-    img <- readJPEG(path, native = TRUE)
+    # img <- readJPEG(path, native = TRUE)
     
     # Extract axis limits from the built plot
     # plot_build <- ggplot_build(element_plot)
@@ -180,20 +220,20 @@ plot_individual <- function(df, df_name = NULL, output_dir = NULL){
     # bottom <- -x_range[1]/diff(x_range)
     # right <- (y_range[2]*1.3)/diff(y_range)
     # top <- -x_range[2]/diff(x_range)
-    left <- 0.9
-    bottom <- 0.044
-    right <- 1.5
-    top <- 0.956
-    
-    # Add inset image
-    img_element_plot <- element_plot +
-      inset_element(
-        p = img,
-        left = left,
-        bottom = bottom,
-        right = right,
-        top = top
-      )
+    # left <- 0.9
+    # bottom <- 0.044
+    # right <- 1.5
+    # top <- 0.956
+    # 
+    # # Add inset image
+    # img_element_plot <- element_plot +
+    #   inset_element(
+    #     p = img,
+    #     left = left,
+    #     bottom = bottom,
+    #     right = right,
+    #     top = top
+    #   )
     
     # print(img_element_plot)
     
@@ -202,8 +242,8 @@ plot_individual <- function(df, df_name = NULL, output_dir = NULL){
     # Save individual plots if output_dir is provided
     if (!is.null(output_dir)) {
       ggsave(
-        filename = file.path(output_dir, paste0(df_name, "_", element, ".png")),
-        plot = img_element_plot,
+        filename = file.path(output_dir, paste0(df_name, "_", element, "line_only.png")),
+        plot = element_plot,
         width = 4, height = 10,
         dpi = 800
         
@@ -221,6 +261,7 @@ plot_individual_top <- function(df, df_name = NULL, output_dir = NULL){
   library(png)
   library(cowplot)
   library(magick)
+  library(svglite)
   
   elements <- df %>%
     select(-c(position..mm.)) %>%
@@ -241,7 +282,9 @@ plot_individual_top <- function(df, df_name = NULL, output_dir = NULL){
         x = "Position",
         y = element
       ) +
-      theme_bw() +
+      theme_minimal() +
+      theme(plot.background = element_rect(fill = "white", color = NA),
+            panel.background = element_rect(fill = "white", color = NA)) +
       theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 6),
             axis.text.y = element_text(size = 6),
             axis.title = element_text(size = 8),
@@ -291,7 +334,7 @@ plot_individual_top <- function(df, df_name = NULL, output_dir = NULL){
     # Save individual plots if output_dir is provided
     if (!is.null(output_dir)) {
       ggsave(
-        filename = file.path(output_dir, paste0(df_name, "_", "top", element, ".png")),
+        filename = file.path(output_dir, paste0(df_name, "_", "top", element,'.png')),
         plot = element_plot,
         width = 4, height = 10,
         dpi = 800
@@ -508,6 +551,88 @@ perform_pca <- function(df, df_name = NULL, plot_scores = FALSE, plot_loadings =
   return(pca_result)
 }
 
+perform_pca2 <- function(df, df_name = NULL, plot_scores = FALSE, plot_loadings = FALSE, print_results = FALSE, output_dir = NULL) {
+  library(ggfortify)
+  library(ggplot2)
+  
+  # Ensure the input dataframe is numeric
+  df_numeric <- df %>% select_if(is.numeric) %>% select(-c(position..mm.))
+  
+  # Scale the data
+  df_scaled <- scale(df_numeric)
+  
+  # Perform PCA
+  pca_result <- prcomp(df_scaled, center = TRUE, scale. = TRUE)
+  
+  # Plot PCA scores separately, colored by position
+  if (plot_scores) {
+    scores_plot <- ggplot(data.frame(pca_result$x), aes(x = PC1, y = PC2, color = df$position..mm.)) +
+      geom_point(size = 3) +
+      labs(
+        title = paste("PCA Scores Plot for", df_name),
+        x = "Principal Component 1",
+        y = "Principal Component 2",
+        color = "Position (mm)"
+      ) +
+      scale_color_viridis_c() + # Uses a perceptually uniform color scale
+      guides(colour = guide_colorbar(reverse = TRUE)) +
+      theme_minimal() +
+      theme(plot.background = element_rect(fill = "white", color = NA),
+            panel.background = element_rect(fill = "white", color = NA))
+    
+    print(scores_plot)
+    
+    if (!is.null(output_dir)) {
+      ggsave(
+        filename = file.path(output_dir, paste0(df_name, "_scores.png")),
+        plot = scores_plot,
+        width = 10, height = 8
+      )
+    }
+  }
+  
+  # Plot PCA loadings separately
+  if (plot_loadings) {
+    loadings_data <- data.frame(pca_result$rotation[, 1:2], Variable = rownames(pca_result$rotation))
+    
+    loadings_plot <- ggplot(loadings_data, aes(x = 0, y = 0, xend = PC1, yend = PC2, label = Variable)) +
+      geom_segment(arrow = arrow(length = unit(0.3, "cm"), type = "closed"), color = "black") +
+      geom_text(aes(x = PC1, y = PC2), size = 4, hjust = 1.2, vjust = 1.2) +
+      labs(
+        title = paste("PCA Loadings Plot for", df_name),
+        x = "Principal Component 1",
+        y = "Principal Component 2"
+      ) +
+      theme_minimal() +
+      theme(plot.background = element_rect(fill = "white", color = NA),
+            panel.background = element_rect(fill = "white", color = NA))
+    
+    print(loadings_plot)
+    
+    if (!is.null(output_dir)) {
+      ggsave(
+        filename = file.path(output_dir, paste0(df_name, "_loadings.png")),
+        plot = loadings_plot,
+        width = 10, height = 8
+      )
+    }
+  }
+  
+  # Print PCA results
+  if (print_results) {
+    message <- if (!is.null(df_name)) {
+      paste("PCA results for dataframe:", df_name)
+    } else {
+      "PCA results:"
+    }
+    cat(message, "\n")
+    print(summary(pca_result))
+    cat("\n \n")
+  }
+  
+  return(pca_result)
+}
+
 # Function to perform clustering 
 
 perform_clustering <- function(df, df_name, k = 3, method = "kmeans") {
@@ -536,20 +661,20 @@ perform_clustering <- function(df, df_name, k = 3, method = "kmeans") {
   # Print a summary of the clustering
   cat("\nClustering results for dataframe:", df_name, "\n")
   print(table(df$Cluster))
-  
+
   # Visualize clusters and optimal cluster number
-  # p <- fviz_cluster(clustering, data = df_numeric, geom = "point",
-  #              stand = FALSE, frame.type = "norm")
-  # print(p)
-  # k.max <- 15
-  # wss <- sapply(1:k.max, 
-  #               function(k){kmeans(df_numeric, k, nstart=10 )$tot.withinss})
-  # plot(1:k.max, wss,
-  #      type="b", pch = 19, frame = FALSE, 
-  #      xlab="Number of clusters K",
-  #      ylab="Total within-clusters sum of squares")
-  # fviz_nbclust(df_numeric, kmeans, method = "silhouette")
-  
+  p <- fviz_cluster(clustering, data = df_numeric, geom = "point",
+               stand = FALSE, frame.type = "norm")
+  print(p)
+  k.max <- 15
+  wss <- sapply(1:k.max,
+                function(k){kmeans(df_numeric, k, nstart=10 )$tot.withinss})
+  plot(1:k.max, wss,
+       type="b", pch = 19, frame = FALSE,
+       xlab="Number of clusters K",
+       ylab="Total within-clusters sum of squares")
+  fviz_nbclust(df_numeric, kmeans, method = "silhouette")
+
   # Return the dataframe with cluster labels
   return(df)
   
@@ -557,14 +682,16 @@ perform_clustering <- function(df, df_name, k = 3, method = "kmeans") {
 
 visualize_clusters <- function(df, df_name, output_dir = NULL, method = "PCA") {
   library(ggplot2)
+  library(ggfortify)
   # Ensure numeric columns are used
   if (!is.null(output_dir)) {
     dir.create(output_dir, showWarnings = FALSE)  # Create output directory if not exists
   }
+  
   df_num <- df %>% select_if(is.numeric) %>% select(-c('position..mm.', 'Cluster'))
   df_numeric <- scale(df_num)
   
-  # Perform dimensionality reduction
+  # Perform dimensionality reduction (PCA)
   if (method == "PCA") {
     pca_result <- prcomp(df_numeric, center = TRUE, scale. = F)
     reduced_data <- as.data.frame(pca_result$x[, 1:2])
@@ -576,30 +703,41 @@ visualize_clusters <- function(df, df_name, output_dir = NULL, method = "PCA") {
   # Add cluster labels to the reduced data
   reduced_data$Cluster <- factor(df$Cluster)  # Assuming 'Cluster' column exists
   
-  # get the number of clusters for labeling
+  # Get the number of clusters for labeling
   n_clust <- reduced_data$Cluster %>% unique() %>% as.numeric() %>% max()
   
-  
-  # Create the cluster plot
-  cluster_plot <- ggplot(reduced_data, aes(x = Dim1, y = Dim2, color = Cluster)) +
+  # Plotting the scores and loadings
+  scores_plot <- ggplot(reduced_data, aes(x = Dim1, y = Dim2, color = Cluster)) +
     geom_point(size = 2, alpha = 0.8, na.rm = T) +
     labs(
-      title = paste("Cluster Visualization for", df_name),
+      title = paste("PCA Cluster Visualization for", df_name),
       x = "Dimension 1",
       y = "Dimension 2",
       color = "Cluster"
     ) +
     theme_bw()
-  print(cluster_plot)
   
-  # Save the plot to the output directory
-  plot_file <- file.path(output_dir, paste0("Cluster_Visualization_", n_clust,'clust_', df_name, ".png"))
-  ggsave(plot_file, plot = cluster_plot, width = 8, height = 6, dpi = 300)
-  # 
-  # cat("Cluster visualization saved for", df_name, "at:", plot_file, "\n")
-  # 
-  # return(cluster_plot)
+  # Loadings (arrows) for PCA
+  loadings_data <- data.frame(pca_result$rotation[, 1:2], Variable = rownames(pca_result$rotation))
+  
+  # Scores plot with loadings overlaid
+  scores_with_loadings_plot <- scores_plot + 
+    geom_segment(data = loadings_data, aes(x = 0, y = 0, xend = PC1, yend = PC2), 
+                 arrow = arrow(length = unit(0.3, "cm"), type = "closed"), color = "blue") +
+    geom_text(data = loadings_data, aes(x = PC1, y = PC2, label = Variable), size = 4, hjust = 1.2, vjust = 1.2, color = "blue") +
+    theme_minimal() +
+    theme(plot.background = element_rect(fill = "white", color = NA),
+          panel.background = element_rect(fill = "white", color = NA))
+  
+  # Save the plot with scores and loadings to the output directory
+  plot_file <- file.path(output_dir, paste0("Cluster_PCA_Scores_and_Loadings_", n_clust,'clust_', df_name, ".png"))
+  ggsave(plot_file, plot = scores_with_loadings_plot, width = 8, height = 6, dpi = 300)
+  
+  # Return the plot (optional)
+  return(scores_with_loadings_plot)
 }
+
+
 
 perform_periodicity_analysis <- function(df, element, df_name = NULL, output_dir = NULL) {
   

@@ -40,6 +40,27 @@ load_data <- function(){
                   clr200 = f_clr200mu,
                   clr500 = f_clr500mu)
 }
+load_raw_data <-function(){
+  library(readxl)
+  #### Import data ####
+  script_path <- getwd()
+  xrf_data_path <- paste(script_path, "/data/XRF Data", sep="")
+  
+  raw_200 <- read_excel(paste(xrf_data_path,
+                              "/POS-22-20_0.2mm_Cr_Results/POS-22-20_0.2mm_Cr_slct_ZnNi.xlsx", 
+                              sep = ""),
+                        skip=2) %>%
+    tibble()
+  
+  raw_500 <- read_excel(paste(xrf_data_path,
+                              "/POS-22-20_0.5mm_Cr_Results/POS-22-20_0.5mm_Cr_slct_ZnNi.xlsx", 
+                              sep = ""),
+                        skip=2) %>%
+    tibble()
+  df.r <- list(raw.200 = raw_200,
+               raw.500 = raw_500)
+  return(df.r)
+}
 
 # Function to clean dataframes
 clean_df <- function(df_list) {
@@ -82,33 +103,23 @@ make_long_clust <- function(df){
 }
 
 # centered log ratio normalization. Input must be from df with count data
-clr_transform <- function(df_count){
+clr_transform <- function(df_count) {
+  # Select only element values
+  df_no_pos <- df_count %>% select(-c('position..mm.'))
   
-  # select only element values
-  df_no_pos <- df_count %>%
-    dplyr::select(-c('position..mm.'))
+  # Compute geometric mean for each row using vectorized operations
+  geometric_means <- exp(rowMeans(log(df_no_pos)))
   
-  # calculate geometric mean at each depth (g(z))
-  n <- ncol(df_no_pos)
+  # Apply CLR transformation in a vectorized manner
+  df_clr <- as.data.frame(log(df_no_pos / geometric_means))
   
-  df_clr <- df_no_pos %>%
-    rowwise() %>%
-    mutate(GeometricMean = (prod(c_across(everything())))^(1/n)) %>%
-    mutate(across(everything(), ~ log(.x / GeometricMean))) %>%
-    ungroup() %>%
-    select(-GeometricMean) # Remove the geometric mean column
+  df_clr$position..mm. <- df_count$position..mm.
   
-  # Print result
-  print(df_clr)
+  # Reorder so 'position..mm.' is the first column
+  df_clr <- df_clr %>% relocate(position..mm.)
   return(df_clr)
 }
 
-clr_base <- function(df_counts){
-  library(compositions)
-  df_clr <- df_counts %>%
-    select(-c('postition..mm.')) %>%
-    clr()
-}
 # function to only select top varves
 select_top_varves <- function(df){
   library(dplyr)
@@ -458,10 +469,14 @@ create_boxplots <- function(df) {
 
 # Function to compute ratios
 compute_ratios <- function(df) {
+  # df %>%
+  #   mutate(
+  #     Si_Al = Si / Al,
+  #     Si_Ti = Si / Ti,
+  #     Fe_Mn = Fe / Mn
+  #   )
   df %>%
     mutate(
-      Si_Al = Si / Al,
-      Si_Ti = Si / Ti,
       Fe_Mn = Fe / Mn
     )
 }
@@ -548,6 +563,7 @@ perform_pca <- function(df, df_name = NULL, plot_scores = FALSE, plot_loadings =
   }
   
   # Return the PCA result for further use
+  pca_result <- fix_pca_signs(pca_result)
   return(pca_result)
 }
 
@@ -629,9 +645,49 @@ perform_pca2 <- function(df, df_name = NULL, plot_scores = FALSE, plot_loadings 
     print(summary(pca_result))
     cat("\n \n")
   }
-  
+  pca_result <- fix_pca_signs(pca_result)
   return(pca_result)
 }
+
+fix_pca_signs <- function(pca_result) {
+  signs <- sign(pca_result$rotation[1, ])  # Check the sign of the first row of each PC
+  signs[signs == 0] <- 1  # Avoid zero values
+  pca_result$x <- sweep(pca_result$x, 2, signs, `*`)  # Flip scores
+  pca_result$rotation <- sweep(pca_result$rotation, 2, signs, `*`)  # Flip loadings
+  return(pca_result)
+}
+
+pca_downcore_plot <- function(pc_df, df_name, pc_num) {
+  
+  # Add position column to PCA scores
+  pc_df$x <- cbind(pc_df$x, position = df.clr[[1]]$position..mm.)
+  
+  # Convert to data frame
+  eignV <- data.frame(pc_df$x)
+  
+  # Create the plot
+  ggplot(data = eignV, aes(x = position, y = .data[[pc_num]])) +
+    geom_line(linewidth=0.1) +  # Line plot of PC variation
+    geom_ribbon(aes(ymin = 0, ymax = ifelse(.data[[pc_num]] > 0, .data[[pc_num]], 0)), 
+                fill = "blue", alpha = 0.5) +  # Blue shading for positive values
+    geom_ribbon(aes(ymin = ifelse(.data[[pc_num]] < 0, .data[[pc_num]], 0), ymax = 0), 
+                fill = "red", alpha = 0.5) +  # Red shading for negative values
+    labs(
+      title = paste(pc_num, "Variation in", df_name),
+      x = "Position",
+      y = paste(pc_num)
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 6),
+          axis.text.y = element_text(size = 6),
+          axis.title = element_text(size = 8),
+          strip.text = element_text(size = 8),
+          legend.position = "none",
+          aspect.ratio = 5) +
+    coord_flip() +
+    scale_x_reverse()
+}
+
 
 # Function to perform clustering 
 
@@ -736,8 +792,6 @@ visualize_clusters <- function(df, df_name, output_dir = NULL, method = "PCA") {
   # Return the plot (optional)
   return(scores_with_loadings_plot)
 }
-
-
 
 perform_periodicity_analysis <- function(df, element, df_name = NULL, output_dir = NULL) {
   

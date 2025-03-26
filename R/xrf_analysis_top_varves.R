@@ -1,4 +1,4 @@
-# Top varves XRF data analysis
+# Top varves (35cm) XRF data analysis
 
 # Source the functions
 source("xrf_functions.R")
@@ -16,18 +16,18 @@ rm(df_list)
 # Filter out the top portion
 df_l <- map(df_l, select_top_varves)
 
-# Select elements
+#### Select elements ####
 all_elements <- c("Al", "Si", "P", "S", "K", "Ca", "Ti", "Mn", "Fe", "Ni", "Zn", "Rb", "Sr", "Zr", "Ba")
 df_l_slct_elmnt <- map(df_l, ~select_elements(.x, all_elements))
 
-# Create and save correlation maps
+#### Create and save correlation maps ####
 map(names(df_l), function(df_name) {
   pdf(paste0("plots/corr_maps_top/correlation_map_toppart", df_name, ".pdf"))
   create_corr_map(df_l[[df_name]])
   dev.off()
 })
 
-# Create and save boxplots
+#### Create and save boxplots ####
 map(names(df_l), function(df_name) {
   pdf(paste0("boxplot_", df_name, ".pdf"))
   print(create_boxplots(df_l[[df_name]]))
@@ -37,7 +37,7 @@ map(names(df_l), function(df_name) {
 # Compute ratios
 ratios <- map(df_l, compute_ratios)
 
-# Perform PCA
+#### Perform PCA ####
 # Perform PCA and generate plots (no need to scale data beforehand)
 pca_resutls <- map2(df_l, names(df_l), ~perform_pca2(.x, df_name = .y, 
                                                     plot_scores = F, 
@@ -54,11 +54,12 @@ pca_resutls <- map2(df_l, names(df_l), ~perform_pca2(.x, df_name = .y,
 #                                                         individual_plots = T,
 #                                                         output_dir = "plots/indiv_element_plots_top"))
 
-# individual element plots 
+#### individual element plots ####
 indiv_plotting_top <- map2(df_l, names(df_l), ~plot_individual_top(.x, .y, "plots/individual_top"))
 
 indiv_plotting_clustered <- map2(df_cluster, names(df_cluster), ~plot_individual_clust(.x, .y, "plots/individual_cluster_top"))
-#clustering
+#### clustering ####
+# Need to add way of determining optimal cluster number
 df_cluster <- map2(df_l, names(df_l), ~perform_clustering(.x, .y, k = 2, method = "kmeans"))
 
 map2(df_cluster, names(df_cluster), ~visualize_clusters(.x, .y, output_dir = 'plots/clusterViz_top'))

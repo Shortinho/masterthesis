@@ -77,7 +77,7 @@ clean_df <- function(df_list) {
   # keep only desired data points (remove non-sediment measurements)
   df_pos <- map(df_list, ~dplyr::filter(.x, `position..mm.` > 25 & `position..mm.` < 1255.7))
   # remove unwanted variables
-  cleaned_df <- map(df_pos, ~select(.x, -any_of(c('filename', 'Voltage', 'Amperage', 'CoreID', 'SectionID', 'RepID', 'DepthID', 'cps', 'MSE', 'Dt','Cr inc', 'Cr coh', 'Ar', 'SampleID', 'Cr.inc', 'Cr.coh'
+  cleaned_df <- map(df_pos, ~select(.x, -any_of(c('filename', 'Voltage', 'Amperage', 'CoreID', 'SectionID', 'RepID', 'DepthID', 'cps', 'MSE', 'Dt', 'Ar', 'SampleID', 'Cr.inc', 'Cr.coh'
   ))))
   return(cleaned_df)
 }
@@ -102,6 +102,27 @@ make_long_clust <- function(df){
   return(df_long)
 }
 
+#
+closed_sum <- function(df_count) {
+  # Separate the metadata (e.g., position) and numeric data
+  meta_cols <- df_count %>% select(position..mm.)
+  numeric_cols <- df_count %>% select(-position..mm.)
+  
+  # Convert to matrix for faster row-wise operations
+  mat <- as.matrix(numeric_cols)
+  row_sums <- rowSums(mat)
+  
+  # Avoid division by zero
+  row_sums[row_sums == 0] <- NA
+  
+  mat_norm <- sweep(mat, 1, row_sums, FUN = "/")
+  df_norm <- as.data.frame(mat_norm)
+  
+  # Recombine with metadata
+  df_result <- bind_cols(meta_cols, df_norm)
+  
+  return(df_result)
+}
 # centered log ratio normalization. Input must be from df with count data
 clr_transform <- function(df_count) {
   # Select only element values
@@ -147,14 +168,13 @@ plot_elements <- function(df, df_name = NULL, output_dir = NULL) {
   library(jpeg)
   
     elements <- df %>%
-      select(-c(position..m.)) %>%
+      select(-c(position..mm.)) %>%
       names()
-    print(elements)
     df_long <- df %>%
       pivot_longer(cols = all_of(elements), names_to = "Variable", values_to = "Value")
     
     # All elements in one figure
-    p <- ggplot(df_long, aes(y = Value, x = SampleID)) +
+    p <- ggplot(df_long, aes(y = Value, x = position..mm.)) +
           geom_path(aes(group = Variable), linewidth=0.15) +
           facet_wrap(~ Variable, scales = "free_x", ncol = (length(elements))) +
           theme_bw() +
@@ -169,10 +189,8 @@ plot_elements <- function(df, df_name = NULL, output_dir = NULL) {
                x = "Sample ID (depth)") +
           coord_flip() +
           scale_x_reverse()
-    
-    print(p)
     ggsave(
-      filename = file.path(output_dir, paste0("_all", df_name, ".png")),
+      filename = file.path(output_dir, paste0("all_", df_name, ".png")),
       plot = p,
       width = 10, height = 8)
 }
@@ -497,7 +515,8 @@ perform_pca <- function(df, df_name = NULL, plot_scores = FALSE, plot_loadings =
   df_scaled <- scale(df_numeric)
   
   # Perform PCA
-  pca_result <- prcomp(df_scaled, center = TRUE, scale. = TRUE)
+  pca_result.no.sign <- prcomp(df_scaled, center = TRUE, scale. = TRUE)
+  pca_result <- fix_pca_signs(pca_result.no.sign)
   
   # Plot PCA scores (biplot) if plot_scores = TRUE
   if (plot_scores) {
@@ -563,7 +582,7 @@ perform_pca <- function(df, df_name = NULL, plot_scores = FALSE, plot_loadings =
   }
   
   # Return the PCA result for further use
-  pca_result <- fix_pca_signs(pca_result)
+  
   return(pca_result)
 }
 
@@ -578,7 +597,8 @@ perform_pca2 <- function(df, df_name = NULL, plot_scores = FALSE, plot_loadings 
   df_scaled <- scale(df_numeric)
   
   # Perform PCA
-  pca_result <- prcomp(df_scaled, center = TRUE, scale. = TRUE)
+  pca_result.no.sign <- prcomp(df_scaled, center = TRUE, scale. = TRUE)
+  pca_result <- fix_pca_signs(pca_result.no.sign) 
   
   # Plot PCA scores separately, colored by position
   if (plot_scores) {
@@ -660,9 +680,9 @@ fix_pca_signs <- function(pca_result) {
 pca_downcore_plot <- function(pc_df, df_name, pc_num) {
   
   # Add position column to PCA scores
-  pc_df$x <- cbind(pc_df$x, position = df.clr[[1]]$position..mm.)
+  pc_df$x <- cbind(pc_df$x, position = df.clr.top[[2]]$position..mm.)
   
-  # Convert to data frame
+  # Convert EigenV to data frame
   eignV <- data.frame(pc_df$x)
   
   # Create the plot

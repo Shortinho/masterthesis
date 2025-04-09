@@ -214,7 +214,7 @@ plot_individual <- function(df, df_name = NULL, output_dir = NULL){
   
   for (element in elements) {
     element_data <- df_long %>% dplyr::filter(Variable == element)
-    print(df_long%>%head())
+    
     element_plot <- ggplot(df_long %>% dplyr::filter(Variable == element), aes(x = position..mm., y = Value)) +
       geom_line(color = "black", linewidth = 0.2, alpha = 0.9) +
       labs(
@@ -228,7 +228,9 @@ plot_individual <- function(df, df_name = NULL, output_dir = NULL){
             axis.title = element_text(size = 8),
             strip.text = element_text(size = 8),
             legend.position = "none",
-            aspect.ratio = 5) +
+            aspect.ratio = 5,
+            plot.background = element_rect(fill = "white", color = NA),
+            panel.background = element_rect(fill = "white", color = NA)) +
       coord_flip() +
       scale_x_reverse()
     path_prfx <- getwd()
@@ -271,7 +273,7 @@ plot_individual <- function(df, df_name = NULL, output_dir = NULL){
     # Save individual plots if output_dir is provided
     if (!is.null(output_dir)) {
       ggsave(
-        filename = file.path(output_dir, paste0(df_name, "_", element, "line_only.png")),
+        filename = file.path(output_dir, paste0(df_name, "_", element, "_line_only.png")),
         plot = element_plot,
         width = 4, height = 10,
         dpi = 800
@@ -486,18 +488,17 @@ create_boxplots <- function(df) {
 }
 
 # Function to compute ratios
-compute_ratios <- function(df) {
-  # df %>%
-  #   mutate(
-  #     Si_Al = Si / Al,
-  #     Si_Ti = Si / Ti,
-  #     Fe_Mn = Fe / Mn
-  #   )
-  df %>%
-    mutate(
-      Fe_Mn = Fe / Mn
-    )
+compute_ratios <- function(df, el1, el2) {
+  # Create a name for the new ratio column
+  ratio_name <- paste(el1, el2, sep = "_ratio")
+  
+  # Add the new column to the dataframe
+  df <- df %>%
+    mutate(!!ratio_name := .data[[el1]] / .data[[el2]])
+  
+  return(df)
 }
+
 
 # Function to perform PCA
 perform_pca <- function(df, df_name = NULL, plot_scores = FALSE, plot_loadings = FALSE, print_results = FALSE, output_dir = NULL) {
@@ -684,7 +685,7 @@ pca_downcore_plot <- function(pc_df, df_name, pc_num) {
   
   # Convert EigenV to data frame
   eignV <- data.frame(pc_df$x)
-  
+  df.c
   # Create the plot
   ggplot(data = eignV, aes(x = position, y = .data[[pc_num]])) +
     geom_line(linewidth=0.1) +  # Line plot of PC variation

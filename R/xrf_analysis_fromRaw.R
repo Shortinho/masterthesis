@@ -41,7 +41,7 @@ pca.500 <- perform_pca(df.clr$raw.500, df_name = 'clr500_all_core', plot_scores 
 
 pca.200.2 <- perform_pca2(df.clr$raw.200, df_name = 'clr200_all_core2', plot_scores = T, plot_loadings = T, output_dir = 'plots/PCA_plots')
 
-pca.500.2 <- perform_pca2(df.clr$raw.500, df_name = 'clr500_all_core2', plot_scores = T, plot_loadings = T, output_dir = 'plots/PCA_plots')
+pca.500.2 <- perform_pca2(df.clr$raw.500, df_name = 'clr500_all_core2', plot_scores = T, plot_loadings = T, output_dir = 'plots/pca_7_4')
 
 pca.sel2 <- perform_pca2(df.clr.partial.top2$raw.200, df_name = 'clr200_top_core_selection2', plot_scores = T, plot_loadings = T, output_dir = 'plots/PCA_plots_top')
 # selection of elements

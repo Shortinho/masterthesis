@@ -159,6 +159,11 @@ select_elements <- function(df, elements) {
   
 }
 
+# import clean and transform in one function
+ICT <- function(){
+  
+}
+
 # Function to create downcore lineplots
 plot_elements <- function(df, df_name = NULL, output_dir = NULL) {
   library(ggplot2)
@@ -490,12 +495,12 @@ create_boxplots <- function(df) {
 # Function to compute ratios
 compute_ratios <- function(df, el1, el2) {
   # Create a name for the new ratio column
-  ratio_name <- paste(el1, el2, sep = "_ratio")
+  ratio_name <- paste(el1, el2, sep = "/")
   
   # Add the new column to the dataframe
   df <- df %>%
-    mutate(!!ratio_name := .data[[el1]] / .data[[el2]])
-  
+    mutate(!!ratio_name := log(.data[[el1]] / .data[[el2]]))
+ 
   return(df)
 }
 

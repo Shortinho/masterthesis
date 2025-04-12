@@ -1,7 +1,6 @@
 # FILE WORKING WITH IMPORTED RAW DATA
 source('xrf_functions.R')
 
-
 #### data prep and transformation ####
 
 # import
@@ -21,8 +20,11 @@ df.clean.partial.top <- map(df.clean.top, ~select_elements(.x, elements = select
 
 df.clean.partial.top2 <- map(df.clean.top, ~select_elements(.x, elements = selection2))
 
+#### transforms ####
+# closed sum
+df.cs <- map(df.clean, closed_sum)
 
-# apply centered log ratio transform
+# centered log ratio
 df.clr <- map(df.clean, clr_transform)
 df.clr.top <- map(df.clean.top, clr_transform)
 df.clr.partial <- map(df.clean.partial, clr_transform)

@@ -5,17 +5,28 @@ source('xrf_functions.R')
 
 # import
 df.raw <- load_raw_data()
-
-# remove unwanted variables (keep only position and element counts)
-df.clean <- clean_df(df.raw)
+sel_pc <- c('position..mm.','Al','Si','P','S','K','Ca','Ti','Fe','Ni','Sr','Zr')
+df.clean <- clean_df(df.raw, sel = sel_pc)
 df.clean.top <- map(df.clean, select_top_varves)
+df.clr <- map(df.clean, clr_transform)
+df.clr.top <- map(df.clean.top, clr_transform)
+pca.500.2 <- perform_pca2(df.clr$raw.500, df_name = 'clr500_all_core2_sel', plot_scores = F, plot_loadings = T, output_dir = 'plots/pca_20_6')
+pca_downcore_plot(pca.500.2, df_name = 'clr500_sel_2', 'PC1', 'plots/downcore_PCA')
 
 # Selection of elements
 all_elements <- c("Al", "Si", "P", "S", "K", "Ca", "Ti", "Mn", "Fe", "Ni", "Zn", "Rb", "Sr", "Zr", "Ba")
-# dataframes without Zr, Ni and Al for clearer PCA
 selection <- c("Si", "P", "S", "K", "Ca", "Ti", "Mn", "Fe", "Zn", "Rb", "Sr", "Ba")
 selection2 <- c("P", "S", "K", "Ca", "Ti", "Fe", "Zn", "Rb", "Ba")
-df.clean.partial <- map(df.clean, ~select_elements(.x, elements = selection))
+selection <- c('position..mm.','Al','Ar','Si','P','S','K','Ca','Ti','Mn','Fe','Ni','Zn','Rb','Sr','Zr','Ba')
+sel_pc <- c('position..mm.','Al','Si','P','S','K','Ca','Ti','Fe','Ni','Sr','Zr')
+
+# remove unwanted variables (keep only position and element counts)
+df.clean <- clean_df(df.raw, sel = sel_pc)
+df.clean.top <- map(df.clean, select_top_varves)
+
+
+
+df.clean.partial <- map(df.clean, ~select_elements(.x, elements = sel_pc))
 df.clean.partial.top <- map(df.clean.top, ~select_elements(.x, elements = selection))
 
 df.clean.partial.top2 <- map(df.clean.top, ~select_elements(.x, elements = selection2))
@@ -43,7 +54,7 @@ pca.500 <- perform_pca(df.clr$raw.500, df_name = 'clr500_all_core', plot_scores 
 
 pca.200.2 <- perform_pca2(df.clr$raw.200, df_name = 'clr200_all_core2', plot_scores = T, plot_loadings = T, output_dir = 'plots/PCA_plots')
 
-pca.500.2 <- perform_pca2(df.clr$raw.500, df_name = 'clr500_all_core2', plot_scores = T, plot_loadings = T, output_dir = 'plots/pca_7_4')
+pca.500.2 <- perform_pca2(df.clr$raw.500, df_name = 'clr500_all_core2_sel', plot_scores = F, plot_loadings = T, output_dir = 'plots/pca_20_6')
 
 pca.sel2 <- perform_pca2(df.clr.partial.top2$raw.200, df_name = 'clr200_top_core_selection2', plot_scores = T, plot_loadings = T, output_dir = 'plots/PCA_plots_top')
 # selection of elements
@@ -112,3 +123,5 @@ pca.FeMn.top <- perform_pca2(df.ratio.clr.top, df_name = 'Fe_Mn_ratio_top', plot
 
 
 dc_plot_pc1 <- pca_downcore_plot(pca.200, df_name = 'clr200', 'PC1')
+
+pca_downcore_plot(pca.500.2, df_name = 'clr500_sel_2', 'PC1', 'plots/downcore_PCA')

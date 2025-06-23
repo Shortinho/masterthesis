@@ -32,9 +32,9 @@ gray_profile_small <- gray_df %>%
   group_by(y) %>%
   summarize(mean_gray = mean(value[floor(width/2-3):ceiling(width/2+3)]))
 
-core_length_cm <- 125.57-2.5  # Replace with your actual core length
+core_length_cm <- 125.57-2.5  
 gray_profile <- gray_profile %>%
-  mutate(depth_cm = (y / max(y)) * core_length_cm +2.5)
+  mutate(depth_cm = ((y-1) / max(y)) * core_length_cm +2.5)
 gray_profile_small <- gray_profile_small %>% 
   mutate(depth_cm = (y / max(y)) * core_length_cm +2.5)
 

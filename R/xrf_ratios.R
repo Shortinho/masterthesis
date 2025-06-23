@@ -34,3 +34,20 @@ ratio.df.500 <- compute_ratios(ratio.df.500, 'Ca', 'K')
 
 # plot the ratios
 
+#remove elements
+ratio.df <- select(ratio.df, -c(2:16))
+ratio.df.500 <- select(ratio.df.500, -c(2:16))
+plot_individual_ratio(ratio.df, df_name = "ratios", output_dir = "plots/ratios/")
+plot_individual_ratio(ratio.df.500, df_name = "ratios500", output_dir = "plots/ratios500/")
+
+
+### ratios without log
+
+r.df <- mutate(df.cs$raw.200, "S_Ti" = S/Ti)
+r.raw.df <- mutate(df.clean$raw.200, 'S_Ti' = S/Ti)
+
+plot_individual(r.df, df_name = 'no_log', output_dir = 'plots/ratio_nolog')
+plot_individual(r.raw.df, df_name = 'no_log_raw', output_dir = 'plots/ratio_nolog_raw')
+
+
+

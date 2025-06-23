@@ -5,6 +5,7 @@ library(ggplot2)
 library(tidyr)
 library(corrplot)
 library(purrr)
+library(svglite)
 
 load_data <- function(){
   library(readxl)
@@ -63,10 +64,11 @@ load_raw_data <-function(){
 }
 
 # Function to clean dataframes
-clean_df <- function(df_list) {
+clean_df <- function(df_list, sel = NULL) {
   library(purrr)
   library(dplyr)
-  elements = c('Al','Si','P','S','K','Ca','Ti','Mn','Fe','Ni','Zn','Rb','Sr','Zr','Ba')
+  if (is.null(sel)){
+    elements = c('position..mm.','Al','Si','P','S','K','Ca','Ti','Mn','Fe','Ni','Zn','Rb','Sr','Zr','Ba')}
   # make all column names universal (remove spaces)
   names.list <- map(df_list, names)
   tidy.names <- map(names.list, ~make.names(.x, unique = T))
@@ -75,10 +77,9 @@ clean_df <- function(df_list) {
     .x
   })
   # keep only desired data points (remove non-sediment measurements)
-  df_pos <- map(df_list, ~dplyr::filter(.x, `position..mm.` > 25 & `position..mm.` < 1255.7))
+  df_pos <- map(df_list, ~dplyr::filter(.x, `position..mm.` > 25 & `position..mm.` < 1231.6))
   # remove unwanted variables
-  cleaned_df <- map(df_pos, ~select(.x, -any_of(c('filename', 'Voltage', 'Amperage', 'CoreID', 'SectionID', 'RepID', 'DepthID', 'cps', 'MSE', 'Dt', 'Ar', 'SampleID', 'Cr.inc', 'Cr.coh'
-  ))))
+  cleaned_df <- map(df_pos, ~select(.x, any_of(sel)))
   return(cleaned_df)
 }
 
@@ -164,7 +165,7 @@ ICT <- function(){
   
 }
 
-# Function to create downcore lineplots
+# Function to create downcore lineplots of all columns of df
 plot_elements <- function(df, df_name = NULL, output_dir = NULL) {
   library(ggplot2)
   library(dplyr)
@@ -278,12 +279,13 @@ plot_individual <- function(df, df_name = NULL, output_dir = NULL){
     # Save individual plots if output_dir is provided
     if (!is.null(output_dir)) {
       ggsave(
-        filename = file.path(output_dir, paste0(df_name, "_", element, "_line_only.png")),
+        filename = file.path(output_dir, paste0(df_name, "_", element, "_line_only.svg")),
         plot = element_plot,
         width = 4, height = 10,
         dpi = 800
         
       )
+      save_svg_plot(element_plot,df_name,width = 4, height = 10)
     }
     
   }
@@ -464,6 +466,58 @@ plot_individual_clust <- function(df, df_name = NULL, output_dir = NULL){
       
     }
   }
+save_svg_plot <- function(plot, filename, width = 6, height = 4) {
+  svglite::svglite(filename, width = width, height = height)
+  print(plot)
+  dev.off()
+}
+
+plot_individual_ratio <- function(df, df_name = NULL, output_dir = NULL){
+  library(ggplot2)
+  library(dplyr)
+  library(tidyr)
+  library(patchwork)
+  
+  elements <- df %>%
+    select(-c(position..mm.)) %>%
+    names()
+  df_long <- make_long(df)
+  
+  if (!is.null(output_dir)) {
+    dir.create(output_dir, showWarnings = FALSE)  # Create output directory if not exists
+  }
+  
+  for (element in elements) {
+    element_data <- df_long %>% filter(Variable == element)
+    
+    element_plot <- ggplot(element_data, aes(x = position..mm., y = Value)) +
+      geom_line(color = "black", linewidth = 0.2, alpha = 0.9) +
+      labs(
+        title = paste("Line Plot for", element, "in", df_name),
+        x = "Position",
+        y = element
+      ) +
+      theme_minimal() +
+      theme(
+        axis.text.x = element_text(angle = 90, hjust = 1, size = 6),
+        axis.text.y = element_text(size = 6),
+        axis.title = element_text(size = 8),
+        strip.text = element_text(size = 8),
+        legend.position = "none",
+        aspect.ratio = 5,
+        plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_rect(fill = "white", color = NA)
+      ) +
+      coord_flip() +
+      scale_x_reverse()
+    
+    if (!is.null(output_dir)) {
+      filename <- file.path(output_dir, paste0(df_name, "_", element, "_line_only.svg"))
+      save_svg_plot(element_plot, filename, width = 4, height = 10)
+    }
+  }
+}
+
 
 # Function to create correlation map
 create_corr_map <- function(df) {
@@ -495,7 +549,7 @@ create_boxplots <- function(df) {
 # Function to compute ratios
 compute_ratios <- function(df, el1, el2) {
   # Create a name for the new ratio column
-  ratio_name <- paste(el1, el2, sep = "/")
+  ratio_name <- paste(el1, el2, sep = "_")
   
   # Add the new column to the dataframe
   df <- df %>%
@@ -604,7 +658,8 @@ perform_pca2 <- function(df, df_name = NULL, plot_scores = FALSE, plot_loadings 
   
   # Perform PCA
   pca_result.no.sign <- prcomp(df_scaled, center = TRUE, scale. = TRUE)
-  pca_result <- fix_pca_signs(pca_result.no.sign) 
+  pca_result <- fix_pca_signs(pca_result.no.sign)
+  pca_result$position..mm. <- df$position..mm.
   
   # Plot PCA scores separately, colored by position
   if (plot_scores) {
@@ -683,36 +738,61 @@ fix_pca_signs <- function(pca_result) {
   return(pca_result)
 }
 
-pca_downcore_plot <- function(pc_df, df_name, pc_num) {
+pca_downcore_plot <- function(pc_df, df_name, pc_num, output_dir = NULL) {
+  library(ggplot2)
+  library(dplyr)
+  library(svglite)
   
-  # Add position column to PCA scores
-  pc_df$x <- cbind(pc_df$x, position = df.clr.top[[2]]$position..mm.)
+  # Create a clean data frame from prcomp output
+  scores_df <- as.data.frame(pc_df$x)
   
-  # Convert EigenV to data frame
-  eignV <- data.frame(pc_df$x)
-  df.c
-  # Create the plot
-  ggplot(data = eignV, aes(x = position, y = .data[[pc_num]])) +
-    geom_line(linewidth=0.1) +  # Line plot of PC variation
-    geom_ribbon(aes(ymin = 0, ymax = ifelse(.data[[pc_num]] > 0, .data[[pc_num]], 0)), 
-                fill = "blue", alpha = 0.5) +  # Blue shading for positive values
-    geom_ribbon(aes(ymin = ifelse(.data[[pc_num]] < 0, .data[[pc_num]], 0), ymax = 0), 
-                fill = "red", alpha = 0.5) +  # Red shading for negative values
-    labs(
-      title = paste(pc_num, "Variation in", df_name),
-      x = "Position",
-      y = paste(pc_num)
-    ) +
+  if (!"position..mm." %in% names(pc_df)) {
+    stop("Missing 'position..mm.' column in pc_df")
+  }
+  
+  scores_df$position <- pc_df$position..mm.
+  
+  # Ensure PC exists
+  if (!pc_num %in% names(scores_df)) {
+    stop(paste("Principal component", pc_num, "not found."))
+  }
+  
+  # Plot
+  p <- ggplot(scores_df, aes(x = position, y = .data[[pc_num]])) +
+    geom_line(linewidth = 0.1) +
+    geom_ribbon(aes(ymin = 0, ymax = ifelse(.data[[pc_num]] > 0, .data[[pc_num]], 0)),
+                fill = "blue", alpha = 0.5) +
+    geom_ribbon(aes(ymin = ifelse(.data[[pc_num]] < 0, .data[[pc_num]], 0), ymax = 0),
+                fill = "red", alpha = 0.5) +
+    labs(title = paste(pc_num, "Variation in", df_name),
+         x = "Position (mm)", y = pc_num) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 6),
           axis.text.y = element_text(size = 6),
           axis.title = element_text(size = 8),
-          strip.text = element_text(size = 8),
           legend.position = "none",
-          aspect.ratio = 5) +
+          aspect.ratio = 5,
+          plot.background = element_rect(fill = 'white')) +
     coord_flip() +
     scale_x_reverse()
+  
+  # Save using ggsave and svglite device (stable workaround)
+  if (!is.null(output_dir)) {
+    dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
+    filename <- file.path(output_dir, paste0(df_name, "_", pc_num, "_DownCore.pdf"))
+    
+    ggsave(
+      filename = filename,
+      plot = p,
+      device = pdf,
+      width = 4,
+      height = 10,
+      dpi = 300
+    )
+  }
+  
 }
+
 
 
 # Function to perform clustering 
@@ -982,4 +1062,13 @@ plot_individual_2 <- function(df, df_name = NULL, output_dir = NULL){
     }
     
   }
+}
+
+
+
+
+save_svg_plot <- function(plot, filename, width = 6, height = 4) {
+  svglite::svglite(filename, width = width, height = height)
+  print(plot)
+  dev.off()
 }

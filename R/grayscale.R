@@ -8,7 +8,7 @@ source('xrf_functions.R')
 
 # load image
 current_dir <- getwd()
-img_path <- paste(current_dir, '/data/bitmap.png', 
+img_path <- paste(current_dir, '/data/POS-22-20_highresruler copy-min copy.jpg', 
                   sep = "")
 img <- image_read(img_path)
 # Convert to grayscale
@@ -25,21 +25,39 @@ gray_df <- expand.grid(x = 1:width, y = 1:height)
 gray_df$value <- as.vector(t(gray_vals))  # transpose to match orientation
 
 
+# gray_profile <- gray_df %>%
+#   group_by(y) %>%
+#   summarize(mean_gray = mean(value))
+# Define center band (±10 pixels around center)
+center_band <- (width / 2 - 10):(width / 2 + 10)
+
+# Filter to center band and compute mean grayscale at each depth (y)
 gray_profile <- gray_df %>%
+  filter(x %in% center_band) %>%
   group_by(y) %>%
-  summarize(mean_gray = mean(value))
-gray_profile_small <- gray_df %>%
-  group_by(y) %>%
-  summarize(mean_gray = mean(value[floor(width/2-3):ceiling(width/2+3)]))
-
-core_length_cm <- 125.57-2.5  
-gray_profile <- gray_profile %>%
-  mutate(depth_cm = ((y-1) / max(y)) * core_length_cm +2.5)
-gray_profile_small <- gray_profile_small %>% 
-  mutate(depth_cm = (y / max(y)) * core_length_cm +2.5)
+  summarize(mean_gray = mean(value)) %>%
+  ungroup()
 
 
-ggplot(gray_profile_small, aes(x = depth_cm, y = mean_gray)) +
+
+core_length_mm <- 1231.6-25
+
+gray_profile <- gray_profile %>% 
+  mutate(depth_mm = ((y-1) / max(y)) * core_length_mm)
+
+# find where to cut
+gray_select <- gray_profile[560:26200,]
+
+# gray_select <- gray_select %>% 
+#   mutate(depth_mm = (y / max(y)) * core_length_mm +2.5)
+# 
+gray_select <- rename(gray_select, position..mm. = depth_mm)
+plot_individual_ratio(gray_select, df_name = 'GrayScale_clean', output_dir = 'plots/grayscale') #remember to scale_y_reverse
+
+gray_profile <- rename(gray_profile, position..mm. = depth_mm)
+plot_individual_ratio(gray_profile, df_name = 'GrayScale', output_dir = 'plots/grayscale') #remember to scale_y_reverse
+
+ggplot(gray_profile, aes(x = depth_mm, y = mean_gray)) +
   geom_line(linewidth = 0.25) +
   coord_flip() +
   scale_x_reverse() +  # Top of the core = top of the plot

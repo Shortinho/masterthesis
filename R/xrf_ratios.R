@@ -31,6 +31,8 @@ ratio.df.500 <- compute_ratios(ratio.df.500, 'Mn', 'Fe')
 ratio.df.500 <- compute_ratios(ratio.df.500, 'Si', 'Al')
 ratio.df.500 <- compute_ratios(ratio.df.500, 'Ba', 'Ti')
 ratio.df.500 <- compute_ratios(ratio.df.500, 'Ca', 'K')
+ratio.df.500 <- compute_ratios(ratio.df.500, 'Si', 'Ti')
+ratio.df.500 <- compute_ratios(ratio.df.500, 'P', 'Ti')
 
 # plot the ratios
 

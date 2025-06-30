@@ -11,7 +11,9 @@ df.clean.top <- map(df.clean, select_top_varves)
 df.clr <- map(df.clean, clr_transform)
 df.clr.top <- map(df.clean.top, clr_transform)
 pca.500.2 <- perform_pca2(df.clr$raw.500, df_name = 'clr500_all_core2_sel', plot_scores = F, plot_loadings = T, output_dir = 'plots/pca_20_6')
-pca_downcore_plot(pca.500.2, df_name = 'clr500_sel_2', 'PC1', 'plots/downcore_PCA')
+pca.500.2.top <- perform_pca2(df.clr.top$raw.500, df_name = 'clr500_top_core2_sel', plot_scores = F, plot_loadings = T, output_dir = 'plots/pca_20_6')
+pca_downcore_plot(pca.500.2, df_name = 'clr500_sel_2', 'PC2', 'plots/downcore_PCA')
+pca_downcore_plot(pca.500.2.top, df_name = 'clr500_top_sel_2', 'PC2', 'plots/downcore_PCA')
 
 # Selection of elements
 all_elements <- c("Al", "Si", "P", "S", "K", "Ca", "Ti", "Mn", "Fe", "Ni", "Zn", "Rb", "Sr", "Zr", "Ba")

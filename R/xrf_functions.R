@@ -68,7 +68,7 @@ clean_df <- function(df_list, sel = NULL) {
   library(purrr)
   library(dplyr)
   if (is.null(sel)){
-    elements = c('position..mm.','Al','Si','P','S','K','Ca','Ti','Mn','Fe','Ni','Zn','Rb','Sr','Zr','Ba')}
+    sel = c('position..mm.','Al','Si','P','S','K','Ca','Ti','Mn','Fe','Ni','Zn','Rb','Sr','Zr','Ba')}
   # make all column names universal (remove spaces)
   names.list <- map(df_list, names)
   tidy.names <- map(names.list, ~make.names(.x, unique = T))
@@ -509,10 +509,11 @@ plot_individual_ratio <- function(df, df_name = NULL, output_dir = NULL){
         panel.background = element_rect(fill = "white", color = NA)
       ) +
       coord_flip() +
-      scale_x_reverse()
+      scale_x_reverse() +
+      scale_y_reverse()
     
     if (!is.null(output_dir)) {
-      filename <- file.path(output_dir, paste0(df_name, "_", element, "_line_only.svg"))
+      filename <- file.path(output_dir, paste0(df_name, "_", element, "_line.svg"))
       save_svg_plot(element_plot, filename, width = 4, height = 10)
     }
   }
@@ -1064,11 +1065,45 @@ plot_individual_2 <- function(df, df_name = NULL, output_dir = NULL){
   }
 }
 
-
-
-
 save_svg_plot <- function(plot, filename, width = 6, height = 4) {
   svglite::svglite(filename, width = width, height = height)
   print(plot)
   dev.off()
 }
+
+synchronize_to_reference <- function(ref_df, target_df,
+                                     ref_depth_col = "position..mm.",
+                                     target_depth_col = "position..mm.",
+                                     target_vars = NULL,
+                                     method = "linear") {
+  # Ensure depth columns are numeric
+  ref_depths <- ref_df[[ref_depth_col]]
+  target_depths <- target_df[[target_depth_col]]
+  
+  # Choose which variables to interpolate
+  if (is.null(target_vars)) {
+    target_vars <- setdiff(names(target_df), target_depth_col)
+  }
+  
+  # Initialize output data frame with reference positions
+  interp_df <- data.frame(ref_df[[ref_depth_col]])
+  colnames(interp_df) <- ref_depth_col
+  
+  # Interpolate each variable
+  for (var in target_vars) {
+    if (!is.numeric(target_df[[var]])) next  # skip non-numeric vars
+    
+    interp_vals <- approx(
+      x = target_depths,
+      y = target_df[[var]],
+      xout = ref_depths,
+      method = method,
+      rule = 2  # allows extrapolation with flat values at ends
+    )$y
+    
+    interp_df[[var]] <- interp_vals
+  }
+  
+  return(interp_df)
+}
+

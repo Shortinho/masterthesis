@@ -4598,7 +4598,7 @@
 <circle cx='93.74' cy='451.34' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='95.00' cy='451.42' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='97.68' cy='451.51' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
-<circle cx='101.96' cy='451.60' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
+<circle cx='101.96' cy='451.60' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='107.67' cy='451.68' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='113.17' cy='451.77' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='116.36' cy='451.86' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
@@ -5519,7 +5519,7 @@
 <circle cx='97.35' cy='531.80' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='98.69' cy='531.89' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='100.16' cy='531.97' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
-<circle cx='101.96' cy='532.06' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
+<circle cx='101.96' cy='532.06' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='104.31' cy='532.15' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='106.24' cy='532.24' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='110.31' cy='532.32' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
@@ -6988,6 +6988,6 @@
 <circle cx='190.92' cy='372.34' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <text x='205.04' y='358.22' style='font-size: 8.80px; font-family: "Arial";' textLength='4.90px' lengthAdjust='spacingAndGlyphs'>1</text>
 <text x='205.04' y='375.50' style='font-size: 8.80px; font-family: "Arial";' textLength='4.90px' lengthAdjust='spacingAndGlyphs'>2</text>
-<text x='38.16' y='14.94' style='font-size: 13.20px; font-family: "Arial";' textLength='246.30px' lengthAdjust='spacingAndGlyphs'>Grayscale Profile with GMM-based Facies</text>
+<text x='38.16' y='14.94' style='font-size: 13.20px; font-family: "Arial";' textLength='347.15px' lengthAdjust='spacingAndGlyphs'>Grayscale Profile with GMM-based Facies, bandwidth =  30</text>
 </g>
 </svg>

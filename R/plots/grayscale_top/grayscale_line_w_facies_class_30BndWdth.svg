@@ -4598,7 +4598,7 @@
 <line x1='107.57' y1='451.42' x2='109.14' y2='451.51' style='stroke-width: 0.64; stroke: #F6E8C3; stroke-linecap: butt;' />
 <line x1='109.14' y1='451.51' x2='112.49' y2='451.59' style='stroke-width: 0.64; stroke: #F6E8C3; stroke-linecap: butt;' />
 <line x1='112.49' y1='451.59' x2='117.84' y2='451.68' style='stroke-width: 0.64; stroke: #F6E8C3; stroke-linecap: butt;' />
-<line x1='117.84' y1='451.68' x2='124.97' y2='451.77' style='stroke-width: 0.64; stroke: #F6E8C3; stroke-linecap: butt;' />
+<line x1='117.84' y1='451.68' x2='124.97' y2='451.77' style='stroke-width: 0.64; stroke: #543005; stroke-linecap: butt;' />
 <line x1='124.97' y1='451.77' x2='131.83' y2='451.86' style='stroke-width: 0.64; stroke: #543005; stroke-linecap: butt;' />
 <line x1='131.83' y1='451.86' x2='135.81' y2='451.94' style='stroke-width: 0.64; stroke: #543005; stroke-linecap: butt;' />
 <line x1='135.81' y1='451.94' x2='143.73' y2='452.03' style='stroke-width: 0.64; stroke: #543005; stroke-linecap: butt;' />
@@ -5519,7 +5519,7 @@
 <line x1='112.07' y1='531.95' x2='113.75' y2='532.04' style='stroke-width: 0.64; stroke: #F6E8C3; stroke-linecap: butt;' />
 <line x1='113.75' y1='532.04' x2='115.58' y2='532.13' style='stroke-width: 0.64; stroke: #F6E8C3; stroke-linecap: butt;' />
 <line x1='115.58' y1='532.13' x2='117.84' y2='532.21' style='stroke-width: 0.64; stroke: #F6E8C3; stroke-linecap: butt;' />
-<line x1='117.84' y1='532.21' x2='120.77' y2='532.30' style='stroke-width: 0.64; stroke: #F6E8C3; stroke-linecap: butt;' />
+<line x1='117.84' y1='532.21' x2='120.77' y2='532.30' style='stroke-width: 0.64; stroke: #543005; stroke-linecap: butt;' />
 <line x1='120.77' y1='532.30' x2='123.18' y2='532.39' style='stroke-width: 0.64; stroke: #543005; stroke-linecap: butt;' />
 <line x1='123.18' y1='532.39' x2='128.27' y2='532.48' style='stroke-width: 0.64; stroke: #543005; stroke-linecap: butt;' />
 <line x1='128.27' y1='532.48' x2='127.48' y2='532.56' style='stroke-width: 0.64; stroke: #543005; stroke-linecap: butt;' />
@@ -6985,6 +6985,6 @@
 <line x1='215.78' y1='372.34' x2='229.61' y2='372.34' style='stroke-width: 0.64; stroke: #F6E8C3; stroke-linecap: butt;' />
 <text x='236.81' y='358.22' style='font-size: 8.80px; font-family: "Arial";' textLength='4.90px' lengthAdjust='spacingAndGlyphs'>1</text>
 <text x='236.81' y='375.50' style='font-size: 8.80px; font-family: "Arial";' textLength='4.90px' lengthAdjust='spacingAndGlyphs'>2</text>
-<text x='38.16' y='14.94' style='font-size: 13.20px; font-family: "Arial";' textLength='239.01px' lengthAdjust='spacingAndGlyphs'>Grayscale Line Profile Colored by Facies</text>
+<text x='38.16' y='14.94' style='font-size: 13.20px; font-family: "Arial";' textLength='334.70px' lengthAdjust='spacingAndGlyphs'>Grayscale Line with GMM-based Facies, bandwidth =  30</text>
 </g>
 </svg>

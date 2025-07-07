@@ -70,16 +70,16 @@ clean_df <- function(df_list, sel = NULL) {
   if (is.null(sel)){
     sel = c('position..mm.','Al','Si','P','S','K','Ca','Ti','Mn','Fe','Ni','Zn','Rb','Sr','Zr','Ba')}
   # make all column names universal (remove spaces)
-  names.list <- map(df_list, names)
-  tidy.names <- map(names.list, ~make.names(.x, unique = T))
-  df_list <- map2(df_list, tidy.names, ~{
+  names.list <- purrr::map(df_list, names)
+  tidy.names <- purrr::map(names.list, ~make.names(.x, unique = T))
+  df_list <- purrr::map2(df_list, tidy.names, ~{
     names(.x) <- .y
     .x
   })
   # keep only desired data points (remove non-sediment measurements)
-  df_pos <- map(df_list, ~dplyr::filter(.x, `position..mm.` > 25 & `position..mm.` < 1231.6))
+  df_pos <- purrr::map(df_list, ~dplyr::filter(.x, `position..mm.` > 25 & `position..mm.` < 1231.6))
   # remove unwanted variables
-  cleaned_df <- map(df_pos, ~select(.x, any_of(sel)))
+  cleaned_df <- purrr::map(df_pos, ~select(.x, any_of(sel)))
   return(cleaned_df)
 }
 

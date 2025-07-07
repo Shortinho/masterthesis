@@ -6985,6 +6985,6 @@
 <line x1='215.78' y1='372.34' x2='229.61' y2='372.34' style='stroke-width: 0.64; stroke: #F6E8C3; stroke-linecap: butt;' />
 <text x='236.81' y='358.22' style='font-size: 8.80px; font-family: "Arial";' textLength='4.90px' lengthAdjust='spacingAndGlyphs'>1</text>
 <text x='236.81' y='375.50' style='font-size: 8.80px; font-family: "Arial";' textLength='4.90px' lengthAdjust='spacingAndGlyphs'>2</text>
-<text x='38.16' y='14.94' style='font-size: 13.20px; font-family: "Arial";' textLength='239.01px' lengthAdjust='spacingAndGlyphs'>Grayscale Line Profile Colored by Facies</text>
+<text x='38.16' y='14.94' style='font-size: 13.20px; font-family: "Arial";' textLength='334.70px' lengthAdjust='spacingAndGlyphs'>Grayscale Line with GMM-based Facies, bandwidth =  80</text>
 </g>
 </svg>

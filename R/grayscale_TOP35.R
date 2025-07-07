@@ -71,6 +71,7 @@ for (band_width in b_wdth_vector) {
   
   
   # facies classification
+  ### GMM method ###
   library(mclust)
   
   # # check for gaussianity
@@ -93,6 +94,20 @@ for (band_width in b_wdth_vector) {
   gray_profile$facies_prob <- gmm$z[, 1]  # or [,2] depending on which is 'dark'
   tapply(gray_profile$mean_gray, gray_profile$facies_class, mean) # check means of both groups
   
+  ### Otsu method ###
+  library(autothresholdr)
+  
+  threshold <- auto_thresh(gray_profile$mean_gray, method = "Otsu")
+  
+  gray_profile$facies_class_otsu <- ifelse(gray_profile$mean_gray < threshold, "dark", "light")
+  
+  
+  ### K-means method ###
+  set.seed(42)
+  kmeans_result <- kmeans(gray_profile$mean_gray, centers = 2)
+  
+  gray_profile$facies_class_kmeans <- kmeans_result$cluster
+  
   # write df
   write.csv(gray_profile, file = paste0("data/generated/grayscale/gray_profile_bw", band_width, ".csv"), row.names = FALSE)
   
@@ -114,7 +129,7 @@ for (band_width in b_wdth_vector) {
     scale_x_reverse() +
     scale_y_reverse() +
     scale_color_manual(values = c('1' = col_pal[1], '2' = col_pal[5])) +
-    labs(title = "Grayscale Profile with GMM-based Facies", x = "Depth (mm)", y = "Grayscale") +
+    labs(title = paste("Grayscale Profile with GMM-based Facies, bandwidth = ", band_width), x = "Depth (mm)", y = "Grayscale") +
     theme_bw()
   
   f_name2 <- paste0('plots/grayscale_top/grayscale_w_facies_class_', band_width, 'BndWdth.svg')
@@ -132,12 +147,12 @@ for (band_width in b_wdth_vector) {
     geom_segment(aes(x = position..mm., y = mean_gray,
                      xend = xend, yend = yend,
                      color = factor(group)),
-                 size = 0.3) +
+                 linewidth = 0.3) +
     scale_color_manual(values = c('1' = col_pal[1], '2' = col_pal[5])) +
     coord_flip() +
     scale_x_reverse() +
     scale_y_reverse() +
-    labs(title = "Grayscale Line Profile Colored by Facies",
+    labs(title = paste("Grayscale Line with GMM-based Facies, bandwidth = ", band_width),
          x = "Depth (mm)", y = "Grayscale") +
     theme_bw()
   
@@ -160,7 +175,7 @@ for (band_width in b_wdth_vector) {
     scale_y_reverse() +
     theme_void() +
     theme(legend.position = "right") +
-    labs(title = "Facies Classification", fill = "Facies")
+    labs(title = paste("Facies Classification, bandwidth = ", band_width), fill = "Facies")
   
   f_name <- paste0('plots/grayscale_top/grayscale_bar_w_facies_class_', band_width, 'BndWdth.svg')
   save_svg_plot(p_bar, f_name, width = 4, height = 10)

@@ -6948,6 +6948,6 @@
 <rect x='256.31' y='377.54' width='15.86' height='15.86' style='stroke-width: 1.07; stroke: none; stroke-linecap: butt; stroke-linejoin: miter; fill: #F6E8C3;' />
 <text x='278.36' y='371.34' style='font-size: 8.80px; font-family: "Arial";' textLength='4.90px' lengthAdjust='spacingAndGlyphs'>1</text>
 <text x='278.36' y='388.62' style='font-size: 8.80px; font-family: "Arial";' textLength='4.90px' lengthAdjust='spacingAndGlyphs'>2</text>
-<text x='0.00' y='14.94' style='font-size: 13.20px; font-family: "Arial";' textLength='120.23px' lengthAdjust='spacingAndGlyphs'>Facies Classification</text>
+<text x='0.00' y='14.94' style='font-size: 13.20px; font-family: "Arial";' textLength='221.07px' lengthAdjust='spacingAndGlyphs'>Facies Classification, bandwidth =  15</text>
 </g>
 </svg>

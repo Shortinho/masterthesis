@@ -213,7 +213,7 @@
 <circle cx='100.39' cy='68.24' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='100.27' cy='68.32' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='100.09' cy='68.41' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
-<circle cx='100.01' cy='68.50' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
+<circle cx='100.01' cy='68.50' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='100.41' cy='68.59' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='101.15' cy='68.67' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='101.52' cy='68.76' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
@@ -737,7 +737,7 @@
 <circle cx='98.79' cy='114.02' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='98.75' cy='114.10' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='99.23' cy='114.19' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
-<circle cx='100.04' cy='114.28' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
+<circle cx='100.04' cy='114.28' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='99.40' cy='114.37' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='99.69' cy='114.45' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='99.42' cy='114.54' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
@@ -1170,7 +1170,7 @@
 <circle cx='90.06' cy='151.85' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='92.52' cy='151.93' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='95.46' cy='152.02' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
-<circle cx='100.04' cy='152.11' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
+<circle cx='100.04' cy='152.11' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='102.54' cy='152.20' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='104.45' cy='152.28' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='104.91' cy='152.37' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
@@ -3839,7 +3839,7 @@
 <circle cx='119.32' cy='385.02' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='113.31' cy='385.11' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='106.93' cy='385.20' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
-<circle cx='100.01' cy='385.29' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
+<circle cx='100.01' cy='385.29' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='92.50' cy='385.37' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='86.32' cy='385.46' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='81.01' cy='385.55' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
@@ -5368,7 +5368,7 @@
 <circle cx='78.96' cy='518.61' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='84.57' cy='518.69' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <circle cx='91.56' cy='518.78' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
-<circle cx='100.05' cy='518.87' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
+<circle cx='100.05' cy='518.87' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='107.03' cy='518.96' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='115.06' cy='519.04' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
 <circle cx='120.57' cy='519.13' r='0.46' style='stroke-width: 0.71; stroke: #543005; fill: #543005;' />
@@ -6988,6 +6988,6 @@
 <circle cx='190.92' cy='372.34' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <text x='205.04' y='358.22' style='font-size: 8.80px; font-family: "Arial";' textLength='4.90px' lengthAdjust='spacingAndGlyphs'>1</text>
 <text x='205.04' y='375.50' style='font-size: 8.80px; font-family: "Arial";' textLength='4.90px' lengthAdjust='spacingAndGlyphs'>2</text>
-<text x='38.16' y='14.94' style='font-size: 13.20px; font-family: "Arial";' textLength='246.30px' lengthAdjust='spacingAndGlyphs'>Grayscale Profile with GMM-based Facies</text>
+<text x='38.16' y='14.94' style='font-size: 13.20px; font-family: "Arial";' textLength='354.48px' lengthAdjust='spacingAndGlyphs'>Grayscale Profile with GMM-based Facies, bandwidth =  100</text>
 </g>
 </svg>

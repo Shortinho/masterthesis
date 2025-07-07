@@ -6988,6 +6988,6 @@
 <circle cx='190.92' cy='372.34' r='0.46' style='stroke-width: 0.71; stroke: #F6E8C3; fill: #F6E8C3;' />
 <text x='205.04' y='358.22' style='font-size: 8.80px; font-family: "Arial";' textLength='4.90px' lengthAdjust='spacingAndGlyphs'>1</text>
 <text x='205.04' y='375.50' style='font-size: 8.80px; font-family: "Arial";' textLength='4.90px' lengthAdjust='spacingAndGlyphs'>2</text>
-<text x='38.16' y='14.94' style='font-size: 13.20px; font-family: "Arial";' textLength='246.30px' lengthAdjust='spacingAndGlyphs'>Grayscale Profile with GMM-based Facies</text>
+<text x='38.16' y='14.94' style='font-size: 13.20px; font-family: "Arial";' textLength='347.15px' lengthAdjust='spacingAndGlyphs'>Grayscale Profile with GMM-based Facies, bandwidth =  80</text>
 </g>
 </svg>

@@ -509,8 +509,8 @@ plot_individual_ratio <- function(df, df_name = NULL, output_dir = NULL){
         panel.background = element_rect(fill = "white", color = NA)
       ) +
       coord_flip() +
-      scale_x_reverse() +
-      scale_y_reverse()
+      scale_x_reverse() 
+      #scale_y_reverse()
     
     if (!is.null(output_dir)) {
       filename <- file.path(output_dir, paste0(df_name, "_", element, "_line.svg"))
@@ -1106,4 +1106,107 @@ synchronize_to_reference <- function(ref_df, target_df,
   
   return(interp_df)
 }
-
+combined_df_creator <- function(sel = NULL){
+  source('xrf_functions.R')
+  
+  #### XRF 0.5mm dataset ####
+  df.raw <- load_raw_data()
+  df.xrf <- clean_df(df.raw, sel = sel)
+  df.xrf$raw.200 <- NULL
+  df.xrf <- tibble(df.xrf$raw.500) %>%
+    select_top_varves()
+  
+  df.cs <- closed_sum(df.xrf) 
+  df.clr <- clr_transform(df.xrf)
+  
+  
+  #### HSI dataset ####
+  path_HSI <- '/Users/maxshore/Documents/Unibe/MasterThesis/POS-22-20_DATA/POS_22_20_HSI/RABD673_Chla/POS22-20_230802-145515_refl_sub_RABD673_spl_645_674.csv'
+  
+  raw.HSI <- read.csv(file = '/Users/maxshore/Documents/Unibe/MasterThesis/POS-22-20_DATA/POS_22_20_HSI/RABD673_Chla/POS22-20_230802-145515_refl_sub_RABD673_spl_645_674.csv') %>%
+    tibble()
+  
+  hsi <- raw.HSI %>% select(c(Core.Depth..mm., RABD673, Moving.Average))
+  hsi <- rename(hsi, position..mm.= Core.Depth..mm.) %>%
+    select_top_varves()
+  
+  #### CNS dataset ####
+  library(readxl)
+  
+  path_CNS <- '/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/POS-22-20_CNS.xlsx'
+  
+  raw.cns <- read_excel(path_CNS) %>%
+    tibble()
+  # convert depth from cm to mm
+  raw.cns$Depth <- raw.cns$Depth*10
+  cns <- rename(raw.cns, position..mm. = Depth) %>%
+    select_top_varves()
+  cns <- cns %>%
+    rename_with(~ gsub('[%/\" ]', '', .x), .cols = matches('TN|TC|TS'))
+  
+  #### grayscale dataset on 20 bandwidth ####
+  path_gs <- '/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/grayscale/gray_profile_bw20.csv'
+  
+  gs <- read.csv(path_gs)
+  
+  
+  #### synchronize ###############################################################
+  
+  # Separate facies from grayscale
+  gs_fac <- gs %>% select(position..mm., facies_class)
+  gs_gray <- gs %>% select(position..mm., mean_gray)
+  
+  gray_sync <- synchronize_to_reference(df.xrf, gs_gray,
+                                        ref_depth_col = "position..mm.",
+                                        target_depth_col = "position..mm.",
+                                        target_vars = c("mean_gray"))
+  
+  library('fuzzyjoin')
+  facies_sync_all <- fuzzyjoin::difference_left_join(
+    df.xrf, gs_fac, 
+    by = "position..mm.",
+    max_dist = 0.25,
+    distance_col = "dist"
+  )
+  
+  facies_sync <- facies_sync_all %>%
+    group_by(position..mm..x) %>%
+    slice_min(order_by = dist, n = 1) %>%
+    ungroup() %>%
+    select(position..mm. = position..mm..x, facies_class)
+  
+  
+  hsi_sync <- synchronize_to_reference(df.xrf, hsi,
+                                       target_vars = c("RABD673", 'Moving.Average'))
+  
+  cns_sync <- synchronize_to_reference(df.xrf, cns,
+                                       target_vars = c("TNWt", "TCWt", "TSWt"))
+  
+  
+  combined_df <- df.xrf %>%
+    left_join(gray_sync, by = "position..mm.") %>%
+    left_join(hsi_sync, by = "position..mm.") %>%
+    left_join(cns_sync, by = "position..mm.") %>%
+    left_join(df.clr, by = 'position..mm.') %>% #.y
+    left_join(df.cs, by = 'position..mm.') %>% # normal no suffix
+    left_join(facies_sync, by = "position..mm.")
+  
+  # compute ratios (make sure to perform on the correct xrf normalisation (cs))
+  combined_df <- compute_ratios(combined_df, 'Mn', 'Fe')
+  combined_df <- compute_ratios(combined_df, 'S', 'Ti')
+  combined_df <- compute_ratios(combined_df, 'Fe', 'Ti')
+  combined_df <- compute_ratios(combined_df, 'Si', 'Ti')
+  combined_df <- compute_ratios(combined_df, 'Ba', 'Ti')
+  combined_df <- compute_ratios(combined_df, 'Ca', 'Ti')
+  combined_df <- compute_ratios(combined_df, 'Ti', 'Al')
+  combined_df <- compute_ratios(combined_df, 'Si', 'Al')
+  combined_df <- compute_ratios(combined_df, 'Zr', 'Rb')
+  combined_df <- compute_ratios(combined_df, 'TCWt', 'TNWt')
+  
+  
+  
+  # save combined df
+  
+  write.csv(combined_df, file = 'data/generated/combined/combined_500.csv')
+  return(combined_df)
+}

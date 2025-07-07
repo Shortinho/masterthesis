@@ -75,7 +75,7 @@ facies_sync <- facies_sync_all %>%
 
 
 hsi_sync <- synchronize_to_reference(df.xrf, hsi,
-                                     target_vars = c("RABD673"))
+                                     target_vars = c("RABD673", 'Moving.Average'))
 
 cns_sync <- synchronize_to_reference(df.xrf, cns,
                                      target_vars = c("TNWt", "TCWt", "TSWt"))
@@ -94,9 +94,18 @@ combined_df <- compute_ratios(combined_df, 'Mn', 'Fe')
 combined_df <- compute_ratios(combined_df, 'S', 'Ti')
 combined_df <- compute_ratios(combined_df, 'Fe', 'Ti')
 combined_df <- compute_ratios(combined_df, 'Si', 'Ti')
-combined_df <- compute_ratios(combined_df, 'Ti', 'Al')
 combined_df <- compute_ratios(combined_df, 'Ba', 'Ti')
+combined_df <- compute_ratios(combined_df, 'Ca', 'Ti')
+combined_df <- compute_ratios(combined_df, 'Ti', 'Al')
+combined_df <- compute_ratios(combined_df, 'Si', 'Al')
+combined_df <- compute_ratios(combined_df, 'Zr', 'Rb')
+combined_df <- compute_ratios(combined_df, 'TCWt', 'TNWt')
 
+
+
+# save combined df
+
+write.csv(combined_df, file = 'data/generated/combined/combined_500.csv')
 
 #### descriptive stats by facies ###############################################
 
@@ -108,11 +117,11 @@ vars_to_summarize <- c(
   # raw counts
   'Fe.x', 'Mn.x', 'S.x', 'Ti.x', 'Al.x', 'Si.x', 'K.x', 'Rb.x', 'Zr.x', 'Ca.x', 'Sr.x', 'P.x', 'Ba.x',
   # ratios
-  'Mn_Fe', 'S_Ti', 'Fe_Ti', 'Si_Ti', 'Ti_Al', 'Ba_Ti',
+  'Mn_Fe', 'S_Ti', 'Fe_Ti', 'Si_Ti', 'Ti_Al', 'Ba_Ti', 'Ca_Ti',
   # CNS
   'TNWt', 'TCWt', 'TSWt',
   # HSI
-  'RABD673',
+  'RABD673', 'Moving.Average',
   # grayscale
   'mean_gray'
 )
@@ -154,6 +163,9 @@ test_results <- lapply(vars_to_test, function(var) {
 
 test.df <- bind_rows(test_results) # small p-values indicate difference in distributions
 
+write.csv(test.df, file = "data/generated/tables/facies_test.csv", row.names = FALSE)
+write.csv(summary_by_facies, file = "data/generated/tables/facies_basic_stats.csv", row.names = FALSE)
+write.csv(summary_all, file = "data/generated/tables/basic_stats.csv", row.names = FALSE)
 
 ### plotting of basic stats ####################################################
 
@@ -189,3 +201,37 @@ plot_facies_comparison <- function(var) {
 
 # Loop over all variables
 walk(plot_vars, plot_facies_comparison)
+
+
+
+
+#### correlation btw datasets ##################################################
+
+variance_sel <- c("Fe","Mn","S","Ti","Al","Si","K","Rb","Zr","Ca","Sr","P","Ba","Mn_Fe","S_Ti","Fe_Ti","Si_Ti","Ba_Ti", 'Ca_Ti',"Ti_Al",'Si_Al','Zr_Rb', "mean_gray","RABD673",'Moving.Average',"TNWt","TCWt","TSWt",'TCWt_TNWt', 'position..mm.', 'facies_class')
+
+combined_df %>% 
+  select(any_of(variance_sel)) %>%
+  create_corr_map()
+
+#### PCA #########################################################
+
+combined_df %>%
+  select(any_of(variance_sel)) %>%
+  perform_pca2(plot_loadings = T,
+               output_dir = 'plots/PCA_variable_selection')
+
+pca_sel1 <- c("Ti","K","Rb","Zr","Ca","Sr","P","Ba","Mn_Fe","S_Ti","Fe_Ti","Si_Ti","Ba_Ti", 'Ca_Ti',"Ti_Al",'Si_Al','Zr_Rb', "mean_gray",'Moving.Average',"TCWt", 'position..mm.')
+
+combined_df %>%
+  select(any_of(pca_sel1)) %>%
+  perform_pca2(df_name = paste(pca_sel1, collapse = ', '),
+               plot_loadings = T,
+               output_dir = 'plots/PCA_variable_selection')
+
+pca_sel2 <- c("Ti","K","Rb","Zr","Ca","Mn_Fe","S_Ti","Fe_Ti","S_Ti","Ba_Ti", 'Ca_Ti',"Ti_Al",'Zr_Rb', "mean_gray",'Moving.Average',"TCWt", 'position..mm.')
+
+combined_df %>%
+  select(any_of(pca_sel2)) %>%
+  perform_pca2(df_name = paste(pca_sel2, collapse = ', '),
+               plot_loadings = T,
+               output_dir = 'plots/PCA_variable_selection')

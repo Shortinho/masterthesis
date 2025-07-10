@@ -101,14 +101,10 @@ combined_df <- compute_ratios(combined_df, 'Si', 'Al')
 combined_df <- compute_ratios(combined_df, 'Zr', 'Rb')
 combined_df <- compute_ratios(combined_df, 'TCWt', 'TNWt')
 
-
-
 # save combined df
-
 write.csv(combined_df, file = 'data/generated/combined/combined_500.csv')
 
 #### descriptive stats by facies ###############################################
-
 vars_to_summarize <- c(
   # closed-sum elements
   'Fe', 'Mn', 'S', 'Ti', 'Al', 'Si', 'K', 'Rb', 'Zr', 'Ca', 'Sr', 'P', 'Ba',
@@ -167,8 +163,7 @@ write.csv(test.df, file = "data/generated/tables/facies_test.csv", row.names = F
 write.csv(summary_by_facies, file = "data/generated/tables/facies_basic_stats.csv", row.names = FALSE)
 write.csv(summary_all, file = "data/generated/tables/basic_stats.csv", row.names = FALSE)
 
-### plotting of basic stats ####################################################
-
+### plotting of basic stats ###################################################
 # Variables to plot
 plot_vars <- vars_to_summarize
 
@@ -200,7 +195,7 @@ plot_facies_comparison <- function(var) {
 }
 
 # Loop over all variables
-walk(plot_vars, plot_facies_comparison)
+#walk(plot_vars, plot_facies_comparison)
 
 
 

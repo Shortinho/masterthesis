@@ -522,7 +522,11 @@ plot_individual_ratio <- function(df, df_name = NULL, output_dir = NULL){
 
 # Function to create correlation map
 create_corr_map <- function(df) {
-  df_numeric <- df %>% select(-position..mm.)
+  if('position..mm.' %in% names(df)){
+    df_numeric <- df %>% select(-position..mm.)}
+  else{
+    df_numeric <- df
+  }
   corr_matrix <- cor(df_numeric, use = "pairwise.complete.obs")
   corrplot(corr_matrix, 
            method = "color", 
@@ -1107,13 +1111,16 @@ synchronize_to_reference <- function(ref_df, target_df,
   return(interp_df)
 }
 combined_df_creator <- function(sel = NULL){
-  source('xrf_functions.R')
+  
+  if(is.null(sel)){
+    sel <- c('position..mm.','Fe', 'Mn', 'S', 'Ti', 'Al', 'Si', 'K', 'Rb', 'Zr', 'Ca', 'Sr', 'P', 'Ba')
+  }
   
   #### XRF 0.5mm dataset ####
   df.raw <- load_raw_data()
   df.xrf <- clean_df(df.raw, sel = sel)
   df.xrf$raw.200 <- NULL
-  df.xrf <- tibble(df.xrf$raw.500) %>%
+  df.xrf <- as_tibble(df.xrf$raw.500) %>%
     select_top_varves()
   
   df.cs <- closed_sum(df.xrf) 
@@ -1191,7 +1198,9 @@ combined_df_creator <- function(sel = NULL){
     left_join(df.cs, by = 'position..mm.') %>% # normal no suffix
     left_join(facies_sync, by = "position..mm.")
   
-  # compute ratios (make sure to perform on the correct xrf normalisation (cs))
+  #### compute ratios ########################################################
+  # (make sure to perform on the correct xrf normalisation (cs))
+  
   combined_df <- compute_ratios(combined_df, 'Mn', 'Fe')
   combined_df <- compute_ratios(combined_df, 'S', 'Ti')
   combined_df <- compute_ratios(combined_df, 'Fe', 'Ti')
@@ -1203,10 +1212,58 @@ combined_df_creator <- function(sel = NULL){
   combined_df <- compute_ratios(combined_df, 'Zr', 'Rb')
   combined_df <- compute_ratios(combined_df, 'TCWt', 'TNWt')
   
-  
-  
   # save combined df
   
-  write.csv(combined_df, file = 'data/generated/combined/combined_500.csv')
+  # write.csv(combined_df, file = 'data/generated/combined/combined_500.csv')
   return(combined_df)
+}
+
+create_combined_df <- function() {
+  combined <- combined_df_creator()
+  no_xrf_combined <- combined %>% select(any_of(vars_not_xrf))
+  return(no_xrf_combined)
+}
+
+load_and_clean_xrf <- function(raw_df, elements) {
+  df <- clean_df(raw_df, sel = elements)
+  df$raw.200 <- NULL
+  df <- tibble(df$raw.500) %>% select_top_varves()
+  df <- closed_sum(df)
+  return(df)
+}
+
+add_ratios <- function(df, ratio_list) {
+  for (pair in ratio_list) {
+    df <- compute_ratios(df, pair[1], pair[2])
+  }
+  return(df)
+}
+
+run_pca_selection_iteration <- function(xrf_vars_kept, ratio_list, other_vars, no_xrf_combined, iteration_name) {
+  # Get all raw elements needed for computing ratios
+  raw_elements_for_ratios <- get_unique_elements_from_ratios(ratio_list)
+  
+  # Ensure we load all variables required for computing ratios
+  xrf_elements <- unique(c(xrf_vars_kept, raw_elements_for_ratios, "position..mm."))
+  
+  df.raw <- load_raw_data()
+  df.xrf <- load_and_clean_xrf(df.raw, elements = xrf_elements)
+  
+  combined <- df.xrf %>%
+    left_join(no_xrf_combined, by = "position..mm.") %>%
+    add_ratios(ratio_list)
+  
+  selected_vars <- c(xrf_vars_kept, other_vars)
+  
+  combined %>%
+    select(any_of(selected_vars)) %>%
+    perform_pca2(
+      plot_loadings = TRUE,
+      df_name = paste0('iter_', iteration_name, '_n_', length(selected_vars)),
+      output_dir = 'plots/PCA_variable_selection'
+    )
+}
+
+get_unique_elements_from_ratios <- function(ratios) {
+  unique(unlist(ratios))
 }

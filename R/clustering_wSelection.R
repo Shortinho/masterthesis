@@ -92,8 +92,6 @@ adjustedRandIndex(df_clust$kmeans_cluster, combined$facies_class)
 
 
 # supervised
-# Install if not already installed
-# install.packages("randomForest")
 
 # using random forest
 # Prepare data
@@ -124,6 +122,15 @@ ggplot(pca_df, aes(x = PC1, y = PC2, color = Predicted)) +
   theme_minimal() +
   labs(title = "PCA Colored by Random Forest Predicted Facies")
 
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Predicted)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "PCA: Redox/Productivity Variables Colored by RF predicted",
+       x = paste0("PC1 (", round(100 * summary(pca_res)$importance[2, 1], 1), "%)"),
+       y = paste0("PC2 (", round(100 * summary(pca_res)$importance[2, 2], 1), "%)"),
+       color = "Facies") +
+  theme_minimal() +
+  scale_color_manual(values = c("#1b9e77", "#d95f02")) + 
+  stat_ellipse(type = "norm", level = 0.68)
 # visualize
 
 ggplot(df_clust, aes(x = position..mm., y = kmeans_cluster)) +

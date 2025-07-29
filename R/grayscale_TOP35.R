@@ -5,6 +5,7 @@ library(magick)
 library(ggplot2)
 library(dplyr)
 library(RColorBrewer)
+library(mclust)
 
 source('xrf_functions.R')
 
@@ -72,7 +73,7 @@ for (band_width in b_wdth_vector) {
   
   # facies classification
   ### GMM method ###
-  library(mclust)
+  
   
   # # check for gaussianity
   # ggplot(gray_profile, aes(x = mean_gray)) +
@@ -86,30 +87,30 @@ for (band_width in b_wdth_vector) {
   # shapiro.test(sample(gray_profile$mean_gray, 5000))  # limit to 5000 points to avoid errors
   # # result rejets single normal distribution
   
-  
+  groups = 3
   # gray_profile is already trimmed and has 'mean_gray' and 'position..mm.'
-  gmm <- Mclust(gray_profile$mean_gray, G = 2)
+  gmm <- Mclust(gray_profile$mean_gray, G = groups)
   # Assign class based on maximum probability
   gray_profile$facies_class <- gmm$classification
   gray_profile$facies_prob <- gmm$z[, 1]  # or [,2] depending on which is 'dark'
   tapply(gray_profile$mean_gray, gray_profile$facies_class, mean) # check means of both groups
   
   ### Otsu method ###
-  library(autothresholdr)
-  
-  threshold <- auto_thresh(gray_profile$mean_gray, method = "Otsu")
-  
-  gray_profile$facies_class_otsu <- ifelse(gray_profile$mean_gray < threshold, "dark", "light")
-  
-  
-  ### K-means method ###
-  set.seed(42)
-  kmeans_result <- kmeans(gray_profile$mean_gray, centers = 2)
-  
-  gray_profile$facies_class_kmeans <- kmeans_result$cluster
+  # library(autothresholdr)
+  # 
+  # threshold <- auto_thresh(gray_profile$mean_gray, method = "Otsu")
+  # 
+  # gray_profile$facies_class_otsu <- ifelse(gray_profile$mean_gray < threshold, "dark", "light")
+  # 
+  # 
+  # ### K-means method ###
+  # set.seed(42)
+  # kmeans_result <- kmeans(gray_profile$mean_gray, centers = 2)
+  # 
+  # gray_profile$facies_class_kmeans <- kmeans_result$cluster
   
   # write df
-  write.csv(gray_profile, file = paste0("data/generated/grayscale/gray_profile_bw", band_width, ".csv"), row.names = FALSE)
+  write.csv(gray_profile, file = paste0("data/generated/grayscale/gray_profile_bw", band_width, 'groups_', groups, ".csv"), row.names = FALSE)
   
   p <- ggplot(gray_profile, aes(x = position..mm., y = mean_gray)) +
     geom_line() +
@@ -157,7 +158,7 @@ for (band_width in b_wdth_vector) {
     theme_bw()
   
   # Save
-  f_name <- paste0('plots/grayscale_top/grayscale_line_w_facies_class_', band_width, 'BndWdth.svg')
+  f_name <- paste0('plots/grayscale_top/grayscale_line_w_facies_class_', band_width, 'BndWdth_groups', groups, '.svg')
   save_svg_plot(p_line, f_name, width = 4, height = 10)
   
   

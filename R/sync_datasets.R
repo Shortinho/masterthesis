@@ -8,6 +8,8 @@ sel <- c('position..mm.','Fe', 'Mn', 'S', 'Ti', 'Al', 'Si', 'K', 'Rb', 'Zr', 'Ca
 
 
 #### XRF 0.5mm dataset ####
+res <- 0.5
+half_res <- res/2
 df.raw <- load_raw_data()
 df.xrf <- clean_df(df.raw, sel = sel)
 df.xrf$raw.200 <- NULL
@@ -16,6 +18,16 @@ df.xrf <- tibble(df.xrf$raw.500) %>%
 
 df.cs <- closed_sum(df.xrf) 
 df.clr <- clr_transform(df.xrf)
+
+# extract Cr inc and Cr coh 500µm
+
+inc.coh <- df.raw$raw.500 %>%
+  select('position (mm)', 'Cr inc', 'Cr coh')
+names <- names(inc.coh)
+tidy.names <- names %>% make.names(unique = T)
+names(inc.coh) <- tidy.names
+inc.coh <- filter(inc.coh, `position..mm.`> 25& `position..mm.` < 1231.6) %>%
+  select_top_varves()
 
 
 #### HSI dataset ####
@@ -63,7 +75,7 @@ library('fuzzyjoin')
 facies_sync_all <- fuzzyjoin::difference_left_join(
   df.xrf, gs_fac, 
   by = "position..mm.",
-  max_dist = 0.25,
+  max_dist = half_res,
   distance_col = "dist"
 )
 
@@ -87,7 +99,8 @@ combined_df <- df.xrf %>%
   left_join(cns_sync, by = "position..mm.") %>%
   left_join(df.clr, by = 'position..mm.') %>% #.y
   left_join(df.cs, by = 'position..mm.') %>% # normal no suffix
-  left_join(facies_sync, by = "position..mm.")
+  left_join(facies_sync, by = "position..mm.") %>% 
+  left_join(inc.coh, by = 'position..mm.')
 
 # compute ratios (make sure to perform on the correct xrf normalisation (cs))
 combined_df <- compute_ratios(combined_df, 'Mn', 'Fe')
@@ -100,9 +113,10 @@ combined_df <- compute_ratios(combined_df, 'Ti', 'Al')
 combined_df <- compute_ratios(combined_df, 'Si', 'Al')
 combined_df <- compute_ratios(combined_df, 'Zr', 'Rb')
 combined_df <- compute_ratios(combined_df, 'TCWt', 'TNWt')
+combined_df <- compute_ratios(combined_df, 'Cr.inc', 'Cr.coh')
 
 # save combined df
-write.csv(combined_df, file = 'data/generated/combined/combined_500.csv')
+write.csv(combined_df, file = 'data/generated/combined/combined_500_inc_coh.csv')
 
 #### descriptive stats by facies ###############################################
 vars_to_summarize <- c(
@@ -230,3 +244,6 @@ combined_df %>%
   perform_pca2(df_name = paste(pca_sel2, collapse = ', '),
                plot_loadings = T,
                output_dir = 'plots/PCA_variable_selection')
+
+
+

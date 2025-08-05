@@ -26,3 +26,5 @@ height <- dim(img_array)[3]
 gray_vals <- as.integer(img_array[1, , ]) / 255  # Normalize
 gray_df <- expand.grid(x = 1:width, y = 1:height)
 gray_df$value <- as.vector(t(gray_vals))  # transpose to match
+
+bandwidth <- 50

@@ -28,7 +28,8 @@ gray_vals <- as.integer(img_array[1, , ]) / 255  # Normalize
 gray_df <- expand.grid(x = 1:width, y = 1:height)
 gray_df$value <- as.vector(t(gray_vals))  # transpose to match
 
-b_wdth_vector <- c(5, 10, 15, 20, 30, 40, 50, 60, 80, 100)
+# b_wdth_vector <- c(5, 10, 15, 20, 30, 40, 50, 60, 80, 100)
+b_wdth_vector <- c(50)
 for (band_width in b_wdth_vector) {
   
   print(band_width)
@@ -68,14 +69,13 @@ for (band_width in b_wdth_vector) {
     filter(y > y_start+2, y < y_end-2)
   
   # Plot calibrated grayscale profile
-  plot_individual_ratio(gray_profile, df_name = 'GrayScale_calibrated_top35', output_dir = 'plots/grayscale_top')
+  # plot_individual_ratio(gray_profile, df_name = 'GrayScale_calibrated_top35', output_dir = 'plots/grayscale_top')
   
   
   # facies classification
   ### GMM method ###
   
-  
-  # # check for gaussianity
+  # # check for gaussianity #####
   # ggplot(gray_profile, aes(x = mean_gray)) +
   #   geom_histogram(aes(y = after_stat(density)), bins = 100, fill = "lightgray", color = "black") +
   #   geom_density(color = "blue", linewidth = 1) +
@@ -87,15 +87,81 @@ for (band_width in b_wdth_vector) {
   # shapiro.test(sample(gray_profile$mean_gray, 5000))  # limit to 5000 points to avoid errors
   # # result rejets single normal distribution
   
-  groups = 3
-  # gray_profile is already trimmed and has 'mean_gray' and 'position..mm.'
+  # --- GMM classification --- ####
+  groups <- 2
   gmm <- Mclust(gray_profile$mean_gray, G = groups)
-  # Assign class based on maximum probability
   gray_profile$facies_class <- gmm$classification
-  gray_profile$facies_prob <- gmm$z[, 1]  # or [,2] depending on which is 'dark'
+  gray_profile$facies_prob <- gmm$z[, 1]
+  
+  # Sort by depth just in case
+  gray_profile <- gray_profile %>%
+    arrange(position..mm.)
+  
+  # Store original facies
+  facies_class <- gray_profile$facies_class
+  depth_vec <- gray_profile$position..mm.
+  
+  # RLE to identify continuous segments
+  rle_facies <- rle(facies_class)
+  lengths <- rle_facies$lengths
+  values <- rle_facies$values
+  
+  # Find start and end indices of each run
+  end_idx <- cumsum(lengths)
+  start_idx <- c(1, head(end_idx, -1) + 1)
+  
+  # Reassign small zones (< 0.2 mm i.e target thickness)
+  for (i in seq_along(values)) {
+    start_i <- start_idx[i]
+    end_i <- end_idx[i]
+    thickness <- abs(depth_vec[end_i] - depth_vec[start_i])
+    
+    target_thickness <- 0.2
+    
+    if (thickness < target_thickness) {
+      # Reassign to neighbor class
+      if (i == 1) {
+        # At beginning: assign to next block
+        facies_class[start_i:end_i] <- values[i + 1]
+      } else if (i == length(values)) {
+        # At end: assign to previous block
+        facies_class[start_i:end_i] <- values[i - 1]
+      } else {
+        # Between two blocks: choose the neighbor with thicker zone
+        prev_thick <- abs(depth_vec[end_idx[i - 1]] - depth_vec[start_idx[i - 1]])
+        next_thick <- abs(depth_vec[end_idx[i + 1]] - depth_vec[start_idx[i + 1]])
+        if (next_thick >= prev_thick) {
+          facies_class[start_i:end_i] <- values[i + 1]
+        } else {
+          facies_class[start_i:end_i] <- values[i - 1]
+        }
+      }
+    }
+  }
+  
+  # Update gray_profile
+  gray_profile$facies_class_cleaned <- facies_class
+  
   tapply(gray_profile$mean_gray, gray_profile$facies_class, mean) # check means of both groups
   
-  ### Otsu method ###
+  ### Couplet count ####
+  facies_clean <- gray_profile$facies_class_cleaned
+  
+  # Get transitions between successive values
+  facies_transitions <- diff(facies_clean)
+  
+  # Identify where a change occurred (±1)
+  transition_points <- which(facies_transitions != 0)
+  
+  # Number of transitions
+  num_transitions <- length(transition_points)
+  
+  # Number of varve couplets = transitions / 2
+  num_couplets <- floor(num_transitions / 2)
+  
+  cat("Estimated number of varve couplets:", num_couplets, "\n")
+  
+  ### Otsu method ####
   # library(autothresholdr)
   # 
   # threshold <- auto_thresh(gray_profile$mean_gray, method = "Otsu")
@@ -103,15 +169,15 @@ for (band_width in b_wdth_vector) {
   # gray_profile$facies_class_otsu <- ifelse(gray_profile$mean_gray < threshold, "dark", "light")
   # 
   # 
-  # ### K-means method ###
+  # ### K-means method ####
   # set.seed(42)
   # kmeans_result <- kmeans(gray_profile$mean_gray, centers = 2)
   # 
   # gray_profile$facies_class_kmeans <- kmeans_result$cluster
   
-  # write df
-  write.csv(gray_profile, file = paste0("data/generated/grayscale/gray_profile_bw", band_width, 'groups_', groups, ".csv"), row.names = FALSE)
-  
+  # write df ####
+  write.csv(gray_profile, file = paste0("data/generated/grayscale/gray_profile_bw", band_width, 'groups_', groups,'filter_',target_thickness,'mm', ".csv"), row.names = FALSE)
+  # plot ####  
   p <- ggplot(gray_profile, aes(x = position..mm., y = mean_gray)) +
     geom_line() +
     geom_vline(xintercept = c(25, 350), linetype = "dashed") +
@@ -137,7 +203,7 @@ for (band_width in b_wdth_vector) {
   save_svg_plot(p2, f_name2, width = 4, height = 10)
   
   
-  gray_segments <- gray_profile %>%
+  gray_segments <- gray_profile_filtered %>%
     arrange(position..mm.) %>%
     mutate(xend = lead(position..mm.),
            yend = lead(mean_gray),
@@ -166,7 +232,7 @@ for (band_width in b_wdth_vector) {
     arrange(position..mm.) %>%
     mutate(depth_top = position..mm.,
            depth_bottom = lead(position..mm.),
-           group = facies_class) %>%
+           group = facies_class_cleaned) %>%
     filter(!is.na(depth_bottom))  # Remove last row
   
   p_bar <- ggplot(facies_bar) +
@@ -174,12 +240,24 @@ for (band_width in b_wdth_vector) {
                   xmin = 0, xmax = 1, fill = factor(group))) +
     scale_fill_manual(values = c('1' = col_pal[1], '2' = col_pal[5])) +
     scale_y_reverse() +
-    theme_void() +
-    theme(legend.position = "right") +
-    labs(title = paste("Facies Classification, bandwidth = ", band_width), fill = "Facies")
+    labs(
+      title = paste("Facies Classification, bandwidth =", band_width),
+      fill = "Facies",
+      y = "Depth (mm)"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.title.x = element_blank(),
+      panel.grid = element_blank(),
+      legend.position = "right",
+      aspect.ratio = 3
+    )
   
-  f_name <- paste0('plots/grayscale_top/grayscale_bar_w_facies_class_', band_width, 'BndWdth.svg')
+  f_name <- paste0('plots/grayscale_top/grayscale_bar', band_width, 'BndWdth_2mmfilter_wAxis.svg')
   save_svg_plot(p_bar, f_name, width = 4, height = 10)
   
 }
+
 

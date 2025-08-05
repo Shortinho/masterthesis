@@ -6,7 +6,7 @@ source('xrf_functions.R')
 combined <- combined_df_creator()
 
 # next step is to make a df that contains all variables except the xrf elements and ratios
-vars_not_xrf <- c('position..mm.', 'mean_gray', 'RABD673', 'Moving.Average', 'TNWt', 'TCWt', 'TSWt', 'facies_class', 'TCWt_TNWt')
+vars_not_xrf <- c('position..mm.', 'TCWt')
 
 no_xrf_combined <- combined %>%
   select(any_of(vars_not_xrf))
@@ -14,6 +14,9 @@ no_xrf_combined <- combined %>%
 # select variables for first PCA: here, all potential variables are included, in the following steps, we filter out variables that are not relevant i.e. keeping the smallest amount of variables that explain the environmental process
 
 variance_sel <- c("Fe","Mn","S","Ti","Al","Si","K","Rb","Zr","Ca","Sr","P","Ba","Mn_Fe","S_Ti","Fe_Ti","Si_Ti","Ba_Ti", 'Ca_Ti',"Ti_Al",'Si_Al','Zr_Rb', "mean_gray","RABD673",'Moving.Average',"TNWt","TCWt","TSWt",'TCWt_TNWt', 'position..mm.', 'facies_class')
+
+
+
 
 combined %>%
   select(any_of(variance_sel)) %>%

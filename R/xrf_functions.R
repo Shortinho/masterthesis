@@ -70,10 +70,8 @@ clean_df <- function(df_list, sel = NULL) {
   if (is.null(sel)){
     sel = c('position..mm.','Al','Si','P','S','K','Ca','Ti','Mn','Fe','Ni','Zn','Rb','Sr','Zr','Ba')}
   # make all column names universal (remove spaces)
-  names.list <- purrr::map(df_list, names)
-  tidy.names <- purrr::map(names.list, ~make.names(.x, unique = T))
-  df_list <- purrr::map2(df_list, tidy.names, ~{
-    names(.x) <- .y
+  df_list <- purrr::map(df_list, ~{
+    names(.x) <- make.names(names(.x), unique = TRUE)
     .x
   })
   # keep only desired data points (remove non-sediment measurements)
@@ -160,10 +158,6 @@ select_elements <- function(df, elements) {
   
 }
 
-# import clean and transform in one function
-ICT <- function(){
-  
-}
 
 # Function to create downcore lineplots of all columns of df
 plot_elements <- function(df, df_name = NULL, output_dir = NULL) {
@@ -521,7 +515,7 @@ plot_individual_ratio <- function(df, df_name = NULL, output_dir = NULL){
 
 
 # Function to create correlation map
-create_corr_map <- function(df) {
+create_corr_map_basic <- function(df) {
   if('position..mm.' %in% names(df)){
     df_numeric <- df %>% select(-position..mm.)}
   else{
@@ -537,6 +531,47 @@ create_corr_map <- function(df) {
            number.cex = 0.7,
            col = colorRampPalette(c("#6D9EC1", "white", "#E46726"))(200))
 }
+
+create_corr_map <- function(df, title = NULL) {
+  if (!requireNamespace("corrplot", quietly = TRUE)) stop("Please install 'corrplot'.")
+  
+  if ("position..mm." %in% names(df)) {
+    df_numeric <- df %>% dplyr::select(-position..mm.)
+  } else {
+    df_numeric <- df
+  }
+  
+  corr_matrix <- cor(df_numeric, use = "pairwise.complete.obs")
+  
+  # Define a diverging, color-blind-friendly palette (Blue-White-Orange)
+  col_palette <- colorRampPalette(c("#2166AC", "white", "#B2182B"))(200)
+  
+  # Set plotting parameters for high-quality output
+  old_par <- par(no.readonly = TRUE)  # store current graphics settings
+  on.exit(par(old_par))               # restore on function exit
+  
+  corrplot::corrplot(
+    corr_matrix,
+    method = "color",
+    type = "upper",
+    tl.col = "black",        # variable name color
+    tl.srt = 45,             # rotate text labels
+    tl.cex = 0.9,            # axis label size
+    cl.cex = 0.8,            # color legend text size
+    addCoef.col = "black",   # show correlation values
+    number.cex = 0.7,        # size of numbers
+    col = col_palette,
+    mar = c(0, 0, 2, 0),     # top margin for optional title
+    diag = FALSE             # hide diagonal (optional aesthetic)
+  )
+  
+  if (!is.null(title)) {
+    title(main = title, font.main = 2, cex.main = 1.2, line = 0.5)
+  }
+}
+
+
+
 
 # Function to create boxplots
 create_boxplots <- function(df) {
@@ -754,8 +789,9 @@ pca_downcore_plot <- function(pc_df, df_name, pc_num, output_dir = NULL) {
   if (!"position..mm." %in% names(pc_df)) {
     stop("Missing 'position..mm.' column in pc_df")
   }
-  
+
   scores_df$position <- pc_df$position..mm.
+
   
   # Ensure PC exists
   if (!pc_num %in% names(scores_df)) {
@@ -780,7 +816,7 @@ pca_downcore_plot <- function(pc_df, df_name, pc_num, output_dir = NULL) {
           plot.background = element_rect(fill = 'white')) +
     coord_flip() +
     scale_x_reverse()
-  
+  print(p)
   # Save using ggsave and svglite device (stable workaround)
   if (!is.null(output_dir)) {
     dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
@@ -1130,10 +1166,10 @@ combined_df_creator <- function(sel = NULL){
   #### HSI dataset ####
   path_HSI <- '/Users/maxshore/Documents/Unibe/MasterThesis/POS-22-20_DATA/POS_22_20_HSI/RABD673_Chla/POS22-20_230802-145515_refl_sub_RABD673_spl_645_674.csv'
   
-  raw.HSI <- read.csv(file = '/Users/maxshore/Documents/Unibe/MasterThesis/POS-22-20_DATA/POS_22_20_HSI/RABD673_Chla/POS22-20_230802-145515_refl_sub_RABD673_spl_645_674.csv') %>%
+  raw.HSI <- read.csv(file = '/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/POS_22_20_HSI/HSI_calibrated.xlsx') %>%
     tibble()
   
-  hsi <- raw.HSI %>% select(c(Core.Depth..mm., RABD673, Moving.Average))
+  hsi <- raw.HSI %>% select(c(Core.Depth..mm., RABD673, Moving.Average, TChl.ug.g))
   hsi <- rename(hsi, position..mm.= Core.Depth..mm.) %>%
     select_top_varves()
   

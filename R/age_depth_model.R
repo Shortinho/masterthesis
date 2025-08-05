@@ -1,3 +1,51 @@
-#Playing with age--depth model data
+#Plotting the age--depth model data provided by Adrianus Damanik
 
-library(rbacon)
+# Load necessary libraries
+library(ggplot2)
+library(readr)
+library(dplyr)
+
+# Read the data (automatically handles tabs or multiple spaces)
+data <- read_table("data/age_depth/POS-22-20_with selection_124_ages.txt", col_names = TRUE)
+
+# Check the structure
+str(data)
+
+# Plot whole core
+ggplot(data, aes(x = mean, y = depth)) +
+  geom_ribbon(aes(xmin = min, xmax = max), fill = "lightblue", alpha = 0.5) +
+  geom_line(color = "blue", size = 1) +
+  scale_y_reverse() +  # Depth increases downward
+  scale_x_reverse() +
+  labs(
+    x = "Age (years)",
+    y = "Depth (cm)",
+    title = "Age-Depth Model",
+    subtitle = "Mean age with min-max confidence interval"
+  ) +
+  theme_minimal() +
+  theme(aspect.ratio = 2)
+
+data <- tibble(data)
+
+data_top <- data %>% 
+  tibble() %>%
+  filter(depth <= 35)
+
+# Plot top 35cm
+
+ggplot(data_top, aes(x = mean, y = depth)) +
+  geom_ribbon(aes(xmin = min, xmax = max), fill = "lightblue", alpha = 0.5) +
+  geom_line(color = "blue", size = 1) +
+  scale_y_reverse() +  # Depth increases downward
+  scale_x_reverse() +
+  labs(
+    x = "Age (years)",
+    y = "Depth (cm)",
+    title = "Age-Depth Model",
+    subtitle = "Mean age with min-max confidence interval"
+  ) +
+  theme_minimal() +
+  theme(aspect.ratio = 2)
+
+

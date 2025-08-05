@@ -3,6 +3,10 @@
 
 source('xrf_functions.R')
 library(FactoMineR)
+library(rioja)
+library(scales)
+library(ggplot2)
+library(forcats)
 
 set.seed(123)
 
@@ -17,13 +21,19 @@ df_clust <- combined %>%
   select(any_of(c("position..mm.", 'facies_class', selected_vars))) %>%
   drop_na()
 
-X <- scale(select(df_clust, -position..mm., -facies_class))
+df_clust <- read.csv(file = 'data/generated/multivar/multivar_10', ) %>%
+  select(-X)
+
+
+# ---- fviz method ------
+X <- scale(select(df_clust, -c(position..mm.)))
 
 # Choose optimal number of clusters (here 2 is optimal)
 fviz_nbclust(X, kmeans, method = "silhouette") +
   theme_minimal()
 
-# Perform k-means
+
+# ---- Perform k-means -----
 km <- kmeans(X, centers = 2, nstart = 25)
 
 df_clust$kmeans_cluster <- as.factor(km$cluster)
@@ -154,8 +164,7 @@ col_pal_cluster <- RColorBrewer::brewer.pal(5, "Set2")  # Adjust number to your 
 p_cluster <- ggplot(cluster_bar) +
   geom_rect(aes(ymin = depth_top, ymax = depth_bottom,
                 xmin = 0, xmax = 1, fill = factor(group))) +
-  scale_fill_manual(values = setNames(col_pal_cluster[1:length(unique(cluster_bar$group))],
-                                      sort(unique(cluster_bar$group)))) +
+  scale_fill_manual(values = c("#b3cde3", "#8856a7")) +
   scale_y_reverse(name = "Depth (mm)") +  # Add depth axis label
   scale_x_continuous(expand = c(0, 0)) +  # Fix spacing on x-axis
   theme_minimal() +  # Use minimal theme instead of void
@@ -164,9 +173,154 @@ p_cluster <- ggplot(cluster_bar) +
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
     panel.grid = element_blank(),
-    legend.position = "right"
+    legend.position = "right",
+    aspect.ratio = 5
+  ) +
+  labs(title = "Cluster Classification Downcore", fill = "Cluster")
+
+print(p_cluster)
+
+output_dir <- 'plots/PCdowncore/'
+filename <- file.path(output_dir, "cluster.svg")
+save_svg_plot(p_cluster, filename, width = 3, height = 8)
+
+
+
+# ---- CONISS -----
+
+diss <- df_clust %>%
+  select(-c(position..mm., X)) %>%
+  scale() %>%
+  dist()  
+clust <- chclust(diss, method = "coniss")
+
+# Plot the constrained dendrogram
+plot(clust)
+
+
+# Optional: use broken stick to choose number of clusters
+bstick(clust)
+
+
+# Step 1: Assign clusters (2 in this case)
+clusters <- cutree(clust, k = 2)
+
+# Step 2: Add cluster labels and calculate top/bottom depths
+cluster_bar <- df_clust
+cluster_bar$group <- clusters
+
+# Rename for easier handling
+cluster_bar$position_mm <- cluster_bar$`position..mm.`
+
+# Sort by depth
+cluster_bar <- cluster_bar[order(cluster_bar$position_mm), ]
+
+# Compute sample interval (assumes roughly constant spacing)
+interval <- median(diff(cluster_bar$position_mm))
+
+# Calculate top and bottom positions around the center point
+cluster_bar$depth_top <- cluster_bar$position_mm - interval / 2
+cluster_bar$depth_bottom <- cluster_bar$position_mm + interval / 2
+
+# Step 3: Plot
+library(ggplot2)
+
+p_cluster <- ggplot(cluster_bar) +
+  geom_rect(aes(ymin = depth_top, ymax = depth_bottom,
+                xmin = 0, xmax = 1, fill = factor(group))) +
+  scale_fill_manual(values = c("#b3cde3", "#8856a7")) +
+  scale_y_reverse(name = "Depth (mm)") +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = "right",
+    aspect.ratio = 5
   ) +
   labs(title = "Cluster Classification Downcore", fill = "Cluster")
 
 p_cluster
+
+
+# ---- CONISS but 3 clusters -----
+
+clusters_3 <- cutree(clust, k = 3)
+cluster_bar_3 <- df_clust
+cluster_bar_3$group <- clusters_3
+cluster_bar_3$position_mm <- cluster_bar_3$`position..mm.`
+
+# Ensure samples are ordered
+cluster_bar_3 <- cluster_bar_3[order(cluster_bar_3$position_mm), ]
+
+# Compute interval
+interval <- median(diff(cluster_bar_3$position_mm))
+
+# Calculate top and bottom
+cluster_bar_3$depth_top <- cluster_bar_3$position_mm - interval / 2
+cluster_bar_3$depth_bottom <- cluster_bar_3$position_mm + interval / 2
+
+colors_3 <- c('#e41a1c', '#377eb8', '#4daf4a')
+
+p_cluster_3 <- ggplot(cluster_bar_3) +
+  geom_rect(aes(ymin = depth_top, ymax = depth_bottom,
+                xmin = 0, xmax = 1, fill = factor(group))) +
+  scale_fill_manual(values = colors_3) +
+  scale_y_reverse(name = "Depth (mm)") +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = "right",
+    aspect.ratio = 5
+  ) +
+  labs(title = "3-Cluster Classification Downcore", fill = "Cluster")
+
+p_cluster_3
+
+
+
+#----- Zander et al style cluster centers ----- 
+
+# Combine cluster labels with X (scaled variables used in clustering)
+X_df <- as.data.frame(X) %>%
+  mutate(kmeans_cluster = factor(km$cluster))
+
+# Compute cluster centers (means of each variable per cluster)
+cluster_centers <- X_df %>%
+  group_by(kmeans_cluster) %>%
+  summarise(across(.cols = everything(), .fns = mean), .groups = "drop")
+
+# Reshape to long format for plotting
+centers_long <- cluster_centers %>%
+  pivot_longer(cols = -kmeans_cluster, names_to = "variable", values_to = "center_value")
+
+# Determine global x-axis range for comparability
+x_limits <- range(centers_long$center_value)
+
+# Plot for cluster 1
+p1 <- ggplot(filter(centers_long, kmeans_cluster == 1),
+             aes(x = center_value, y = fct_rev(variable))) +
+  geom_col(fill = "#8856a7") +
+  scale_x_continuous(limits = x_limits) +
+  labs(title = "Cluster 1", x = "Cluster Center (Scaled)", y = "Variable") +
+  theme_minimal()
+
+# Plot for cluster 2
+p2 <- ggplot(filter(centers_long, kmeans_cluster == 2),
+             aes(x = center_value, y = fct_rev(variable))) +
+  geom_col(fill = "#b3cde3") +
+  scale_x_continuous(limits = x_limits) +
+  labs(title = "Cluster 2", x = "Cluster Center (Scaled)", y = "Variable") +
+  theme_minimal()
+
+# Display side by side
+p1 + p2
+
+
 

@@ -1,8 +1,10 @@
-# synchronize all datasets
+# synchronize all datasets for top 35cm
 
 # load all datasets
 
 source('xrf_functions.R')
+
+library(readxl)
 
 sel <- c('position..mm.','Fe', 'Mn', 'S', 'Ti', 'Al', 'Si', 'K', 'Rb', 'Zr', 'Ca', 'Sr', 'P', 'Ba')
 
@@ -33,15 +35,15 @@ inc.coh <- filter(inc.coh, `position..mm.`> 25& `position..mm.` < 1231.6) %>%
 #### HSI dataset ####
 path_HSI <- '/Users/maxshore/Documents/Unibe/MasterThesis/POS-22-20_DATA/POS_22_20_HSI/RABD673_Chla/POS22-20_230802-145515_refl_sub_RABD673_spl_645_674.csv'
 
-raw.HSI <- read.csv(file = '/Users/maxshore/Documents/Unibe/MasterThesis/POS-22-20_DATA/POS_22_20_HSI/RABD673_Chla/POS22-20_230802-145515_refl_sub_RABD673_spl_645_674.csv') %>%
+raw.HSI <- read_excel('/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/POS_22_20_HSI/HSI_calibrated.xlsx') %>%
   tibble()
-
-hsi <- raw.HSI %>% select(c(Core.Depth..mm., RABD673, Moving.Average))
+names(raw.HSI) <- make.names(names(raw.HSI), unique = T)
+hsi <- raw.HSI %>% select(c(Core.Depth..mm., RABD673, Moving.Average, TChl.ug.g))
 hsi <- rename(hsi, position..mm.= Core.Depth..mm.) %>%
   select_top_varves()
 
 #### CNS dataset ####
-library(readxl)
+
 
 path_CNS <- '/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/POS-22-20_CNS.xlsx'
 
@@ -55,7 +57,7 @@ cns <- cns %>%
   rename_with(~ gsub('[%/\" ]', '', .x), .cols = matches('TN|TC|TS'))
 
 #### grayscale dataset on 20 bandwidth ####
-path_gs <- '/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/grayscale/gray_profile_bw20.csv'
+path_gs <- '/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/grayscale/gray_profile_bw50groups_2filter_0.2mm.csv'
 
 gs <- read.csv(path_gs)
 
@@ -87,7 +89,7 @@ facies_sync <- facies_sync_all %>%
 
 
 hsi_sync <- synchronize_to_reference(df.xrf, hsi,
-                                     target_vars = c("RABD673", 'Moving.Average'))
+                                     target_vars = c("RABD673", 'Moving.Average', 'TChl.ug.g'))
 
 cns_sync <- synchronize_to_reference(df.xrf, cns,
                                      target_vars = c("TNWt", "TCWt", "TSWt"))
@@ -216,7 +218,7 @@ plot_facies_comparison <- function(var) {
 
 #### correlation btw datasets ##################################################
 
-variance_sel <- c("Fe","Mn","S","Ti","Al","Si","K","Rb","Zr","Ca","Sr","P","Ba","Mn_Fe","S_Ti","Fe_Ti","Si_Ti","Ba_Ti", 'Ca_Ti',"Ti_Al",'Si_Al','Zr_Rb', "mean_gray","RABD673",'Moving.Average',"TNWt","TCWt","TSWt",'TCWt_TNWt', 'position..mm.', 'facies_class')
+variance_sel <- c("Fe","Mn","S","Ti","Al","Si","K","Rb","Zr","Ca","Sr","P","Ba","Mn_Fe","S_Ti","Fe_Ti","Si_Ti","Ba_Ti", 'Ca_Ti',"Ti_Al",'Si_Al','Zr_Rb', "mean_gray", 'TChl.ug.g',"TNWt","TCWt","TSWt",'TCWt_TNWt', 'position..mm.')
 
 combined_df %>% 
   select(any_of(variance_sel)) %>%

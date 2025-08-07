@@ -771,12 +771,22 @@ perform_pca2 <- function(df, df_name = NULL, plot_scores = FALSE, plot_loadings 
 }
 
 fix_pca_signs <- function(pca_result) {
-  signs <- sign(pca_result$rotation[1, ])  # Check the sign of the first row of each PC
-  signs[signs == 0] <- 1  # Avoid zero values
-  pca_result$x <- sweep(pca_result$x, 2, signs, `*`)  # Flip scores
-  pca_result$rotation <- sweep(pca_result$rotation, 2, signs, `*`)  # Flip loadings
+  if (pca_result$rotation[1, 1] < 0) {
+    pca_result$x[, 1] <- -pca_result$x[, 1]
+    pca_result$rotation[, 1] <- -pca_result$rotation[, 1]
+  }
+  if (pca_result$rotation[1, 2] < 0) {
+    pca_result$x[, 2] <- -pca_result$x[, 2]
+    pca_result$rotation[, 2] <- -pca_result$rotation[, 2]
+  }
+  if (pca_result$rotation[1, 3] < 0) {
+    pca_result$x[, 3] <- -pca_result$x[, 3]
+    pca_result$rotation[, 3] <- -pca_result$rotation[, 3]
+  }
   return(pca_result)
 }
+
+
 
 pca_downcore_plot <- function(pc_df, df_name, pc_num, output_dir = NULL) {
   library(ggplot2)
@@ -805,7 +815,7 @@ pca_downcore_plot <- function(pc_df, df_name, pc_num, output_dir = NULL) {
                 fill = "blue", alpha = 0.5) +
     geom_ribbon(aes(ymin = ifelse(.data[[pc_num]] < 0, .data[[pc_num]], 0), ymax = 0),
                 fill = "red", alpha = 0.5) +
-    labs(title = paste(pc_num, "Variation in", df_name),
+    labs(title = paste(pc_num, " Downcore Variation"),
          x = "Position (mm)", y = pc_num) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 6),
@@ -813,7 +823,8 @@ pca_downcore_plot <- function(pc_df, df_name, pc_num, output_dir = NULL) {
           axis.title = element_text(size = 8),
           legend.position = "none",
           aspect.ratio = 5,
-          plot.background = element_rect(fill = 'white')) +
+          plot.background = element_rect(fill = 'white'),
+          ) +
     coord_flip() +
     scale_x_reverse()
   print(p)

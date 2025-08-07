@@ -24,13 +24,19 @@ df_clust <- combined %>%
 df_clust <- read.csv(file = 'data/generated/multivar/multivar_10', ) %>%
   select(-X)
 
+combined <- read.csv('data/generated/combined/combined_AC_200_inc_coh.csv')
+xrf_elem_sel <- c('Fe.y','Mn.y','Ba.y','S.y','Ti.y','Al.y','Si.y','K.y', 'Ca.y', 'Rb.y', 'Zr.y', 'Sr.y', 'P.y', 'Ba.y','position..mm.')
+
+df_clust <- combined %>% 
+  select(any_of(c(xrf_elem_sel, 'facies_class')))
 
 # ---- fviz method ------
-X <- scale(select(df_clust, -c(position..mm.)))
+X <- scale(select(df_clust, -c(position..mm., facies_class)))
 
 # Choose optimal number of clusters (here 2 is optimal)
-fviz_nbclust(X, kmeans, method = "silhouette") +
-  theme_minimal()
+fviz_nbclust(X, kmeans, method = 'silhouette') +
+  theme_minimal() +
+  labs(title = 'Optimal number of clusters \n 500µm - All Core')
 
 
 # ---- Perform k-means -----
@@ -164,7 +170,7 @@ col_pal_cluster <- RColorBrewer::brewer.pal(5, "Set2")  # Adjust number to your 
 p_cluster <- ggplot(cluster_bar) +
   geom_rect(aes(ymin = depth_top, ymax = depth_bottom,
                 xmin = 0, xmax = 1, fill = factor(group))) +
-  scale_fill_manual(values = c("#b3cde3", "#8856a7")) +
+  scale_fill_manual(values = c('#af8dc3','#f7f7f7','#7fbf7b')) +
   scale_y_reverse(name = "Depth (mm)") +  # Add depth axis label
   scale_x_continuous(expand = c(0, 0)) +  # Fix spacing on x-axis
   theme_minimal() +  # Use minimal theme instead of void
@@ -176,12 +182,12 @@ p_cluster <- ggplot(cluster_bar) +
     legend.position = "right",
     aspect.ratio = 5
   ) +
-  labs(title = "Cluster Classification Downcore", fill = "Cluster")
+  labs(title = "Cluster Classification Downcore \n 200µm All Core - KMeans", fill = "Cluster")
 
 print(p_cluster)
 
 output_dir <- 'plots/PCdowncore/'
-filename <- file.path(output_dir, "cluster.svg")
+filename <- file.path(output_dir, "cluster_200_AC.svg")
 save_svg_plot(p_cluster, filename, width = 3, height = 8)
 
 
@@ -189,7 +195,7 @@ save_svg_plot(p_cluster, filename, width = 3, height = 8)
 # ---- CONISS -----
 
 diss <- df_clust %>%
-  select(-c(position..mm., X)) %>%
+  select(-c(position..mm., facies_class, kmeans_cluster)) %>%
   scale() %>%
   dist()  
 clust <- chclust(diss, method = "coniss")
@@ -199,11 +205,11 @@ plot(clust)
 
 
 # Optional: use broken stick to choose number of clusters
-bstick(clust)
+bstick(clust, 15)
 
 
 # Step 1: Assign clusters (2 in this case)
-clusters <- cutree(clust, k = 2)
+clusters <- cutree(clust, k = 7)
 
 # Step 2: Add cluster labels and calculate top/bottom depths
 cluster_bar <- df_clust
@@ -228,7 +234,7 @@ library(ggplot2)
 p_cluster <- ggplot(cluster_bar) +
   geom_rect(aes(ymin = depth_top, ymax = depth_bottom,
                 xmin = 0, xmax = 1, fill = factor(group))) +
-  scale_fill_manual(values = c("#b3cde3", "#8856a7")) +
+  #scale_fill_manual(values = c('#8856a7','#b3cde3')) +
   scale_y_reverse(name = "Depth (mm)") +
   scale_x_continuous(expand = c(0, 0)) +
   theme_minimal() +
@@ -240,7 +246,7 @@ p_cluster <- ggplot(cluster_bar) +
     legend.position = "right",
     aspect.ratio = 5
   ) +
-  labs(title = "Cluster Classification Downcore", fill = "Cluster")
+  labs(title = "Cluster Classification Downcore \n 200µm CONISS 7 clusters", fill = "Cluster")
 
 p_cluster
 

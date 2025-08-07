@@ -12,9 +12,9 @@ library(scales)
 
 source('xrf_functions.R')
 
-combined <- read.csv('/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/combined/combined_500_fig1.csv')
+combined <- read.csv('/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/combined/combined_200_fig1.csv')
 
-xrf_elem_sel <- c("Fe","Mn",'Ba',"S","Ti","Al","Si","K", 'Ca','position..mm.')
+xrf_elem_sel <- c("Fe","Mn",'Ba',"S","Ti","Al","Si","K", 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','Ni','Zn','position..mm.')
 non_xrf_sel <- c('position..mm.', 'TCWt')
 all_sel <- append(xrf_elem_sel, non_xrf_sel)
 
@@ -271,10 +271,9 @@ ggsave("plots/PCdowncore/PC2_downcore_profile.png", plot = p, width = 80, height
 
 
 
-# ---- PCA using only elements, no ratios ----
+# ---- PCA using only elements, no ratios, 500µm ----
 
 combined.elem <- read.csv('/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/combined/combined_500_inc_coh.csv')
-
 
 xrf_elem_sel <- c("Fe","Mn",'Ba',"S","Ti","Al","Si","K", 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','position..mm.')
 non_xrf_sel <- c('position..mm.', 'TCWt')
@@ -317,7 +316,8 @@ loadings <- as_tibble(pca_result$rotation, rownames = "variable")
 loadings_scaled <- loadings %>%
   mutate(
     PC1 = PC1 * pca_result$sdev[1],
-    PC2 = PC2 * pca_result$sdev[2]
+    PC2 = PC2 * pca_result$sdev[2],
+    PC3 = PC3 * pca_result$sdev[3]
   )
 
 #  Add metadata for faceting
@@ -367,7 +367,7 @@ p.pca <- ggplot() +
     panel.grid = element_blank(),
     axis.line = element_blank()
   ) +
-  ggtitle("PCA Biplot Colored by Depth")
+  ggtitle("PCA Biplot Colored by Depth - 500µm")
 
 print(p.pca)
 output_dir <- 'plots/fig_pres/'
@@ -413,4 +413,442 @@ p.pca.kclust <- ggplot() +
 print(p.pca.kclust)
 output_dir <- 'plots/fig_pres/'
 filename <- file.path(output_dir, "PCA_all_elem_cluster.svg")
+save_svg_plot(p.pca.kclust, filename, width = 15, height = 10)
+
+
+
+
+# ---- PCA using only elements, no ratios, 200µm ----
+
+combined.elem.200 <- read.csv('/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/combined/combined_200_inc_coh.csv')
+
+
+xrf_elem_sel <- c("Fe","Mn",'Ba',"S","Ti","Al","Si","K", 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','position..mm.')
+non_xrf_sel <- c('position..mm.', 'TCWt')
+all_sel <- append(xrf_elem_sel, non_xrf_sel)
+
+res <- 0.2
+half_res <- res/2
+df.raw <- load_raw_data()
+df.xrf <- clean_df(df.raw, sel = xrf_elem_sel)
+df.xrf$raw.500 <- NULL
+df.xrf <- tibble(df.xrf$raw.200) %>%
+  select_top_varves()
+
+df.cs <- closed_sum(df.xrf) 
+df.clr <- clr_transform(df.xrf)
+df.pca <- df.clr %>%
+  select(-position..mm.)
+
+pca_result <- prcomp(df.pca, scale. = TRUE, center = TRUE)
+pca_result <- fix_pca_signs(pca_result)
+
+# prepare cluster data
+X <- scale(df.pca)
+
+# Choose optimal number of clusters (here 2 is optimal)
+fviz_nbclust(X, kmeans, method = "silhouette") +
+  theme_minimal()
+
+
+# ---- Perform k-means -----
+km <- kmeans(X, centers = 2, nstart = 25)
+
+combined.elem.200$kmeans_cluster <- as.factor(km$cluster)
+
+# ---- Extract scores and loadings ----
+scores <- as_tibble(pca_result$x)
+loadings <- as_tibble(pca_result$rotation, rownames = "variable")
+
+# Rescale loadings to match sample space
+loadings_scaled <- loadings %>%
+  mutate(
+    PC1 = PC1 * pca_result$sdev[1],
+    PC2 = PC2 * pca_result$sdev[2],
+    PC3 = PC3 * pca_result$sdev[3]
+  )
+
+#  Add metadata for faceting
+scores <- scores %>%
+  mutate(depth = combined.elem.200$position..mm.) %>%
+  mutate(facies = combined.elem.200$facies_class) %>%
+  mutate(kcluster = combined.elem.200$kmeans_cluster)
+
+var_expl <- round(100 * pca_result$sdev^2 / sum(pca_result$sdev^2), 1)
+
+# ---- PLOTTING ----
+# ---- plotting by depth ----
+
+# by depth
+p.pca <- ggplot() +
+  # Sample points colored by depth
+  geom_point(data = scores, aes(x = PC1, y = PC3, colour = depth),
+             shape = 16, size = 2.5) +
+  
+  # Loadings arrows
+  geom_segment(data = loadings_scaled,
+               aes(x = 0, y = 0, xend = PC1 * 3, yend = PC3 * 3),
+               arrow = arrow(length = unit(0.2, "cm")),
+               color = "black", linewidth = 0.6) +
+  
+  # Loadings labels
+  geom_text_repel(data = loadings_scaled,
+                  aes(x = PC1 * 3.2, y = PC3 * 3.2, label = variable),
+                  size = 6, color = "black") +
+  
+  # Center lines
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+  geom_vline(xintercept = 0, linetype = "dotted", color = "black") +
+  
+  # Axes and theme
+  xlab(paste0("PC1 (", var_expl[1], "%)")) +
+  ylab(paste0("PC3 (", var_expl[3], "%)")) +
+  coord_equal() +
+  scale_colour_gradient(
+    low = "#c6dbef",
+    high = "#08306b",
+    name = "Depth (mm)",
+    guide = guide_colorbar(reverse = TRUE)  # must go here
+  ) +  # blue scale
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_blank()
+  ) +
+  ggtitle("PCA Biplot Colored by Depth - 200µm")
+
+print(p.pca)
+output_dir <- 'plots/fig_pres/'
+filename <- file.path(output_dir, "PCA_1_3_all_elem_depth.svg")
+save_svg_plot(p.pca, filename, width = 15, height = 10)
+
+# ---- by cluster ----
+p.pca.kclust <- ggplot() +
+  # Sample points colored by depth
+  geom_point(data = scores, aes(x = PC1, y = PC3, color = kcluster),
+             shape = 16, size = 2.5) +
+  
+  # ellipse over points
+  stat_ellipse(data = scores, aes(x = PC1, y = PC3, color = kcluster), 
+               type = "norm", level = 0.68) +
+  # Loadings arrows
+  geom_segment(data = loadings_scaled,
+               aes(x = 0, y = 0, xend = PC1 * 3, yend = PC3 * 3),
+               arrow = arrow(length = unit(0.2, "cm")),
+               color = "black", linewidth = 0.6) +
+  
+  # Loadings labels
+  geom_text_repel(data = loadings_scaled,
+                  aes(x = PC1 * 3.2, y = PC3 * 3.2, label = variable),
+                  size = 5, color = "black") +
+  
+  # Center lines
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+  geom_vline(xintercept = 0, linetype = "dotted", color = "black") +
+  
+  # Axes and theme
+  xlab(paste0("PC1 (", var_expl[1], "%)")) +
+  ylab(paste0("PC3 (", var_expl[3], "%)")) +
+  coord_equal() +
+  scale_colour_manual(values = c("#8856a7","#b3cde3")) + 
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_blank()
+  ) +
+  ggtitle("PCA Biplot Colored by K-means Cluster") 
+
+print(p.pca.kclust)
+output_dir <- 'plots/fig_pres/'
+filename <- file.path(output_dir, "PCA_1_3_all_elem_cluster.svg")
+save_svg_plot(p.pca.kclust, filename, width = 15, height = 10)
+
+
+# ---- PCA using only elements, no ratios, 200µm ALL CORE ----
+
+combined.elem.200.AC <- read.csv('/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/combined/combined_AC_200_inc_coh.csv')
+
+
+xrf_elem_sel <- c("Fe","Mn",'Ba',"S","Ti","Al","Si","K", 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','position..mm.')
+non_xrf_sel <- c('position..mm.', 'TCWt')
+all_sel <- append(xrf_elem_sel, non_xrf_sel)
+
+res <- 0.2
+half_res <- res/2
+df.raw <- load_raw_data()
+df.xrf <- clean_df(df.raw, sel = xrf_elem_sel)
+df.xrf$raw.500 <- NULL
+df.xrf <- tibble(df.xrf$raw.200)
+
+df.cs <- closed_sum(df.xrf) 
+df.clr <- clr_transform(df.xrf)
+df.pca <- df.clr %>%
+  select(-position..mm.)
+
+pca_result <- prcomp(df.pca, scale. = TRUE, center = TRUE)
+pca_result <- fix_pca_signs(pca_result)
+
+# prepare cluster data
+X <- scale(df.pca)
+
+# Choose optimal number of clusters (here 3 is optimal)
+fviz_nbclust(X, kmeans, method = "silhouette") +
+  theme_minimal()
+
+
+# ---- Perform k-means -----
+km <- kmeans(X, centers = 3, nstart = 25)
+
+combined.elem.200.AC$kmeans_cluster <- as.factor(km$cluster)
+
+# ---- Extract scores and loadings ----
+scores <- as_tibble(pca_result$x)
+loadings <- as_tibble(pca_result$rotation, rownames = "variable")
+
+# Rescale loadings to match sample space
+loadings_scaled <- loadings %>%
+  mutate(
+    PC1 = PC1 * pca_result$sdev[1],
+    PC2 = PC2 * pca_result$sdev[2],
+    PC3 = PC3 * pca_result$sdev[3]
+  )
+
+#  Add metadata for faceting
+scores <- scores %>%
+  mutate(depth = combined.elem.200.AC$position..mm.) %>%
+  mutate(facies = combined.elem.200.AC$facies_class) %>%
+  mutate(kcluster = combined.elem.200.AC$kmeans_cluster)
+
+var_expl <- round(100 * pca_result$sdev^2 / sum(pca_result$sdev^2), 1)
+
+# ---- PLOTTING ----
+# ---- plotting by depth ----
+
+# by depth
+p.pca <- ggplot() +
+  # Sample points colored by depth
+  geom_point(data = scores, aes(x = PC1, y = PC2, colour = depth),
+             shape = 16, size = 2.5) +
+  
+  # Loadings arrows
+  geom_segment(data = loadings_scaled,
+               aes(x = 0, y = 0, xend = PC1 * 3, yend = PC2 * 3),
+               arrow = arrow(length = unit(0.2, "cm")),
+               color = "black", linewidth = 0.6) +
+  
+  # Loadings labels
+  geom_text_repel(data = loadings_scaled,
+                  aes(x = PC1 * 3.2, y = PC2 * 3.2, label = variable),
+                  size = 6, color = "black") +
+  
+  # Center lines
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+  geom_vline(xintercept = 0, linetype = "dotted", color = "black") +
+  
+  # Axes and theme
+  xlab(paste0("PC1 (", var_expl[1], "%)")) +
+  ylab(paste0("PC2 (", var_expl[2], "%)")) +
+  coord_equal() +
+  scale_colour_gradient(
+    low = "#c6dbef",
+    high = "#08306b",
+    name = "Depth (mm)",
+    guide = guide_colorbar(reverse = TRUE)  # must go here
+  ) +  # blue scale
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_blank()
+  ) +
+  ggtitle("PCA Biplot Colored by Depth - 200µm ALL CORE")
+
+print(p.pca)
+output_dir <- 'plots/fig_pres/'
+filename <- file.path(output_dir, "PCA_AC_1_2_200_all_elem_depth_.svg")
+save_svg_plot(p.pca, filename, width = 15, height = 10)
+
+# ---- by cluster ----
+p.pca.kclust <- ggplot() +
+  # Sample points colored by depth
+  geom_point(data = scores, aes(x = PC1, y = PC2, color = kcluster),
+             shape = 16, size = 2.5) +
+  
+  # ellipse over points
+  stat_ellipse(data = scores, aes(x = PC1, y = PC2, color = kcluster), 
+               type = "norm", level = 0.68) +
+  # Loadings arrows
+  geom_segment(data = loadings_scaled,
+               aes(x = 0, y = 0, xend = PC1 * 3, yend = PC2 * 3),
+               arrow = arrow(length = unit(0.2, "cm")),
+               color = "black", linewidth = 0.6) +
+  
+  # Loadings labels
+  geom_text_repel(data = loadings_scaled,
+                  aes(x = PC1 * 3.2, y = PC2 * 3.2, label = variable),
+                  size = 5, color = "black") +
+  
+  # Center lines
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+  geom_vline(xintercept = 0, linetype = "dotted", color = "black") +
+  
+  # Axes and theme
+  xlab(paste0("PC1 (", var_expl[1], "%)")) +
+  ylab(paste0("PC2 (", var_expl[2], "%)")) +
+  coord_equal() +
+  scale_colour_manual(values = c('#af8dc3','#f7f7f7','#7fbf7b')) + 
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_blank()
+  ) +
+  ggtitle("PCA Biplot Colored by K-means Cluster") 
+
+print(p.pca.kclust)
+output_dir <- 'plots/fig_pres/'
+filename <- file.path(output_dir, "PCA_AC_1_2_200_all_elem_cluster.svg")
+save_svg_plot(p.pca.kclust, filename, width = 15, height = 10)
+
+
+# ---- PCA using only elements, no ratios, 500µm ALL CORE ----
+
+combined.elem.500.AC <- read.csv('/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/combined/combined_AC_500_inc_coh.csv')
+
+
+xrf_elem_sel <- c("Fe","Mn",'Ba',"S","Ti","Al","Si","K", 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','position..mm.')
+non_xrf_sel <- c('position..mm.', 'TCWt')
+all_sel <- append(xrf_elem_sel, non_xrf_sel)
+
+res <- 0.5
+half_res <- res/2
+df.raw <- load_raw_data()
+df.xrf <- clean_df(df.raw, sel = xrf_elem_sel)
+df.xrf$raw.200 <- NULL
+df.xrf <- tibble(df.xrf$raw.500)
+
+df.cs <- closed_sum(df.xrf) 
+df.clr <- clr_transform(df.xrf)
+df.pca <- df.clr %>%
+  select(-position..mm.)
+
+pca_result <- prcomp(df.pca, scale. = TRUE, center = TRUE)
+pca_result <- fix_pca_signs(pca_result)
+
+# prepare cluster data
+X <- scale(df.pca)
+
+# Choose optimal number of clusters (here 2 is optimal)
+fviz_nbclust(X, kmeans, method = "silhouette") +
+  theme_minimal()
+
+
+# ---- Perform k-means -----
+km <- kmeans(X, centers = 2, nstart = 25)
+
+combined.elem.500.AC$kmeans_cluster <- as.factor(km$cluster)
+
+# ---- Extract scores and loadings ----
+scores <- as_tibble(pca_result$x)
+loadings <- as_tibble(pca_result$rotation, rownames = "variable")
+
+# Rescale loadings to match sample space
+loadings_scaled <- loadings %>%
+  mutate(
+    PC1 = PC1 * pca_result$sdev[1],
+    PC2 = PC2 * pca_result$sdev[2],
+    PC3 = PC3 * pca_result$sdev[3]
+  )
+
+#  Add metadata for faceting
+scores <- scores %>%
+  mutate(depth = combined.elem.500.AC$position..mm.) %>%
+  mutate(facies = combined.elem.500.AC$facies_class) %>%
+  mutate(kcluster = combined.elem.500.AC$kmeans_cluster)
+
+var_expl <- round(100 * pca_result$sdev^2 / sum(pca_result$sdev^2), 1)
+
+# ---- PLOTTING ----
+# ---- plotting by depth ----
+
+# by depth
+p.pca <- ggplot() +
+  # Sample points colored by depth
+  geom_point(data = scores, aes(x = PC1, y = PC2, colour = depth),
+             shape = 16, size = 2.5) +
+  
+  # Loadings arrows
+  geom_segment(data = loadings_scaled,
+               aes(x = 0, y = 0, xend = PC1 * 3, yend = PC2 * 3),
+               arrow = arrow(length = unit(0.2, "cm")),
+               color = "black", linewidth = 0.6) +
+  
+  # Loadings labels
+  geom_text_repel(data = loadings_scaled,
+                  aes(x = PC1 * 3.2, y = PC2 * 3.2, label = variable),
+                  size = 6, color = "black") +
+  
+  # Center lines
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+  geom_vline(xintercept = 0, linetype = "dotted", color = "black") +
+  
+  # Axes and theme
+  xlab(paste0("PC1 (", var_expl[1], "%)")) +
+  ylab(paste0("PC2 (", var_expl[2], "%)")) +
+  coord_equal() +
+  scale_colour_gradient(
+    low = "#c6dbef",
+    high = "#08306b",
+    name = "Depth (mm)",
+    guide = guide_colorbar(reverse = TRUE)  # must go here
+  ) +  # blue scale
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_blank()
+  ) +
+  ggtitle("PCA Biplot Colored by Depth - 500µm ALL CORE")
+
+print(p.pca)
+output_dir <- 'plots/fig_pres/'
+filename <- file.path(output_dir, "PCA_AC_1_2_500_all_elem_depth_.svg")
+save_svg_plot(p.pca, filename, width = 15, height = 10)
+
+# ---- by cluster ----
+p.pca.kclust <- ggplot() +
+  # Sample points colored by depth
+  geom_point(data = scores, aes(x = PC1, y = PC2, color = kcluster),
+             shape = 16, size = 2.5) +
+  
+  # ellipse over points
+  stat_ellipse(data = scores, aes(x = PC1, y = PC2, color = kcluster), 
+               type = "norm", level = 0.68) +
+  # Loadings arrows
+  geom_segment(data = loadings_scaled,
+               aes(x = 0, y = 0, xend = PC1 * 3, yend = PC2 * 3),
+               arrow = arrow(length = unit(0.2, "cm")),
+               color = "black", linewidth = 0.6) +
+  
+  # Loadings labels
+  geom_text_repel(data = loadings_scaled,
+                  aes(x = PC1 * 3.2, y = PC2 * 3.2, label = variable),
+                  size = 5, color = "black") +
+  
+  # Center lines
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+  geom_vline(xintercept = 0, linetype = "dotted", color = "black") +
+  
+  # Axes and theme
+  xlab(paste0("PC1 (", var_expl[1], "%)")) +
+  ylab(paste0("PC2 (", var_expl[2], "%)")) +
+  coord_equal() +
+  scale_colour_manual(values = c('#8856a7','#e0ecf4')) + 
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_blank()
+  ) +
+  ggtitle("PCA Biplot Colored by K-means Cluster - 500µm All Core") 
+
+print(p.pca.kclust)
+output_dir <- 'plots/fig_pres/'
+filename <- file.path(output_dir, "PCA_AC_1_2_500_all_elem_cluster.svg")
 save_svg_plot(p.pca.kclust, filename, width = 15, height = 10)

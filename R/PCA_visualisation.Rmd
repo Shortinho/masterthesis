@@ -1,0 +1,564 @@
+---
+title: "PCA Visualisation"
+author: "Max Shore"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Preparing the data for PCA
+```{r library, echo=FALSE, message=FALSE, include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(FactoMineR)
+library(factoextra)
+library(tibble)
+library(ggrepel)  # for optional smart labels
+library(svglite)
+library(scales)
+library(RColorBrewer)
+
+
+source('xrf_functions.R')
+```
+
+## Initial Parameters
+```{r init, echo=FALSE}
+# in this section: choose the resolution and top or all core for subsequent analysis
+
+res <- 0.5 # resolution (mm) of the xrf dataset
+res_micro <- 1000* res
+half_res <- res/2
+l_analysis <- 'top_' # either all core "AC_" or "top_"
+if(l_analysis == 'AC_'){
+  l_text <- 'all core'
+} else {
+  l_text <- 'top 35cm'
+}
+
+xrf_elem_ZnNi <- c('Fe','Mn','Ba','S','Ti','Al','Si','K', 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','Ni','Zn','position..mm.')
+xrf_elem <- c('Fe','Mn','Ba','S','Ti','Al','Si','K', 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','position..mm.')
+sel <- xrf_elem
+features <- sel[!sel %in% c("position..mm.")]
+print(paste('xrf resolution =', res_micro, 'µm'))
+print(paste('analysis will be done on', l_text))
+print('Feature selection:')
+cat(features, sep = ', ')
+
+```
+## Load corresponding datasets
+```{r load, echo=F}
+
+path_combined_folder <- '/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/combined/'
+path_combined_file <- paste(path_combined_folder,'combined_',l_analysis, res_micro,'_inc_coh.csv', sep = '')
+print(paste('Loading of ', res_micro, 'µm data', sep = ''))
+print(paste('Corresponding combined dataframe is', path_combined_file, collapse = '\n'))
+combined <- read.csv(path_combined_file)
+df.raw <- load_raw_data()
+```
+
+## Prepare transformed data for PCA and clustering
+```{r prepare data}
+
+df.xrf <- clean_df(df.raw, sel = sel)
+
+if(res_micro == 500){
+  df.xrf$raw.200 <- NULL
+  df.xrf <- tibble(df.xrf$raw.500)
+} else {
+  df.xrf$raw.500 <- NULL
+  df.xrf <- tibble(df.xrf$raw.200)
+} # selection of dataframe
+if(l_analysis == 'top_'){
+  df.xrf <- df.xrf %>%
+    select_top_varves()
+} # selection of top varves
+df.cs <- closed_sum(df.xrf) 
+df.clr <- clr_transform(df.xrf)
+```
+
+## Perform PCA and k-means clustering
+``` {r pca and cluster dataframes}
+pca.df <- perform_pca2(df.clr)
+X <- scale(df.clr %>% select(-position..mm.))
+# Choose optimal number of clusters
+f_clust <- fviz_nbclust(X, kmeans, method = "silhouette") +
+  theme_minimal()
+print(f_clust)
+n_clust <- f_clust$data
+optimal_clust <- as.numeric(n_clust$clusters[which.max(n_clust$y)])
+
+
+print(paste('Optimal number of clusters is', optimal_clust))
+
+km <- kmeans(X, centers = optimal_clust, nstart = 25)
+
+scores <- as_tibble(pca.df$x)
+loadings <- as_tibble(pca.df$rotation, rownames = "variable")
+
+# Rescale loadings to match sample space
+loadings_scaled <- loadings %>%
+  mutate(
+    PC1 = PC1 * pca.df$sdev[1],
+    PC2 = PC2 * pca.df$sdev[2],
+    PC3 = PC3 * pca.df$sdev[3]
+  )
+
+#  Add metadata for faceting
+scores <- scores %>%
+  mutate(depth = pca.df$position..mm.) %>%
+  mutate(kcluster = as.factor(km$cluster))
+
+var_expl <- round(100 * pca.df$sdev^2 / sum(pca.df$sdev^2), 1)
+cum_var <- cumsum(var_expl)
+pc_names = pca.df$rotation %>% colnames()
+var_pca <- tibble(
+  pc = pc_names,
+  var_expl = var_expl,
+  cum_var = cum_var
+)
+var_pca <- var_pca %>%
+  mutate(pc = factor(pc, levels = pc))
+
+p_var_expl <- ggplot(var_pca, aes(x = pc)) +
+  geom_bar(aes(y = var_expl), stat = "identity", fill = "steelblue", alpha = 0.7) +
+  geom_line(aes(y = cum_var, group = 1), color = "red", linewidth = 0.5) +
+  geom_point(aes(y = cum_var), color = "red", size = 2) +
+  labs(
+    x = "Principal Component",
+    y = "Explained Variance (%)",
+    title = "Explained and Cumulative Variance by PC"
+  ) +
+  theme_minimal()
+print(p_var_expl)
+fviz_contrib(pca.df, choice='var', axes = c(1))
+fviz_contrib(pca.df, choice = 'var', axes = c(2))
+fviz_contrib(pca.df, choice='var', axes = c(3))
+
+
+```
+
+
+## Biplots of PC1, PC2 and PC3
+
+### PC1 vs PC2 - Depth facteting
+
+```{r biplot depth 1_2, echo=F, message=FALSE, warning=F, include=T, fig.width=10}
+
+pcs <- '1_2'
+p.depth12 <- ggplot() +
+  # Sample points colored by depth
+  geom_point(data = scores, aes(x = PC1, y = PC2, colour = depth),
+             shape = 16, size = 1.5) +
+  
+  # Loadings arrows
+  geom_segment(data = loadings_scaled,
+               aes(x = 0, y = 0, xend = PC1 * 8, yend = PC2 * 8),
+               arrow = arrow(length = unit(0.2, "cm")),
+               color = "black", linewidth = 0.6) +
+  
+  # Loadings labels
+  geom_text_repel(data = loadings_scaled,
+                  aes(x = PC1 * 8.5, y = PC2 * 8.5, label = variable),
+                  size = 6, color = "black") +
+  
+  # Center lines
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+  geom_vline(xintercept = 0, linetype = "dotted", color = "black") +
+  
+  # Axes and theme
+  xlab(paste0("PC1 (", var_expl[1], "%)")) +
+  ylab(paste0("PC2 (", var_expl[2], "%)")) +
+  coord_equal() +
+  scale_colour_gradient(
+    low = "#c6dbef",
+    high = "#08306b",
+    name = "Depth (mm)",
+    guide = guide_colorbar(reverse = TRUE)  # must go here
+  ) +  # blue scale
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_blank()
+  ) +
+  ggtitle(paste("PCA Biplot Colored by Depth -", res_micro, 'µm ', l_text, 
+                sep = ''))
+print(p.depth12)
+output_dir <- 'plots/PCA_plots_'
+output_subdir <- paste(l_analysis,res_micro, sep = '')
+filename.svg <- paste(output_dir,output_subdir, '/depth', pcs,'.svg', sep = '')
+filename.png <- paste(output_dir,output_subdir, '/depth', pcs,'.png', sep = '')
+invisible(save_svg_plot(p.depth12, filename.svg, width = 15, height = 10))
+ggsave(filename.png, plot = p.depth12, width = 80, height = 120, units = "mm", dpi = 600)
+
+
+```
+
+### PC1 vs PC2 - K-means cluster faceting
+
+```{r biplot cluster 1_2,  echo=F, message=FALSE, warning=F, include=T, fig.width=10}
+if(optimal_clust == 2){
+  col_pal <- c("#8856a7","#b3cde3")
+} else if (optimal_clust == 3) {
+  col_pal <- c('#8856a7','#9ebcda','#e0ecf4')
+} else {
+  col_pal <- RColorBrewer::brewer.pal(optimal_clust, 'Purples')
+}
+pcs <- '1_2'
+p.clust12 <- ggplot() +
+  # Sample points colored by depth
+  geom_point(data = scores, aes(x = PC1, y = PC2, color = kcluster),
+             shape = 16, size = 1.5) +
+  
+  # ellipse over points
+  stat_ellipse(data = scores, aes(x = PC1, y = PC2, color = kcluster), 
+               type = "norm", level = 0.68) +
+  # Loadings arrows
+  geom_segment(data = loadings_scaled,
+               aes(x = 0, y = 0, xend = PC1 * 8, yend = PC2 * 8),
+               arrow = arrow(length = unit(0.2, "cm")),
+               color = "black", linewidth = 0.6) +
+  
+  # Loadings labels
+  geom_text_repel(data = loadings_scaled,
+                  aes(x = PC1 * 8.5, y = PC2 * 8.5, label = variable),
+                  size = 5, color = "black") +
+  
+  # Center lines
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+  geom_vline(xintercept = 0, linetype = "dotted", color = "black") +
+  
+  # Axes and theme
+  xlab(paste0("PC1 (", var_expl[1], "%)")) +
+  ylab(paste0("PC2 (", var_expl[2], "%)")) +
+  coord_equal() +
+  scale_colour_manual(values = col_pal) + 
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_blank()
+  ) +
+  ggtitle(paste("PCA Biplot Colored by K-means Cluster - ", res_micro, 'µm ', l_text, 
+                sep=''))
+
+print(p.clust12)
+
+output_dir <- 'plots/PCA_plots_'
+output_subdir <- paste(l_analysis,res_micro, sep = '')
+filename.svg <- paste(output_dir,output_subdir, '/kmeans', pcs,'.svg', sep = '')
+filename.png <- paste(output_dir,output_subdir, '/kmeans', pcs,'.png', sep = '')
+invisible(save_svg_plot(p.clust12, filename.svg, width = 15, height = 10))
+ggsave(filename.png, plot = p.clust12, width = 80, height = 120, units = "mm", dpi = 600)
+```
+
+### PC1 vs PC3 - Depth faceting
+
+```{r biplot depth 1_3,  echo=F, message=FALSE, warning=F, include=T, fig.width=10}
+pcs <- '1_3'
+p.depth13 <- ggplot() +
+  # Sample points colored by depth
+  geom_point(data = scores, aes(x = PC1, y = PC3, colour = depth),
+             shape = 16, size = 1.5) +
+  
+  # Loadings arrows
+  geom_segment(data = loadings_scaled,
+               aes(x = 0, y = 0, xend = PC1 * 8, yend = PC3 * 8),
+               arrow = arrow(length = unit(0.2, "cm")),
+               color = "black", linewidth = 0.6) +
+  
+  # Loadings labels
+  geom_text_repel(data = loadings_scaled,
+                    aes(x = PC1 * 8.5, y = PC3 * 8.5, label = variable),
+                  size = 6, color = "black") +
+  
+  # Center lines
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+  geom_vline(xintercept = 0, linetype = "dotted", color = "black") +
+  
+  # Axes and theme
+  xlab(paste0("PC1 (", var_expl[1], "%)")) +
+  ylab(paste0("PC3 (", var_expl[3], "%)")) +
+  coord_equal() +
+  scale_colour_gradient(
+    low = "#c6dbef",
+    high = "#08306b",
+    name = "Depth (mm)",
+    guide = guide_colorbar(reverse = TRUE)  # must go here
+  ) +  # blue scale
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_blank()
+  ) +
+  ggtitle(paste("PCA Biplot Colored by Depth -", res_micro, 'µm ', l_text, 
+                sep = ''))
+print(p.depth13)
+
+output_dir <- 'plots/PCA_plots_'
+output_subdir <- paste(l_analysis,res_micro, sep = '')
+filename.svg <- paste(output_dir,output_subdir, '/depth', pcs,'.svg', sep = '')
+filename.png <- paste(output_dir,output_subdir, '/depth', pcs,'.png', sep = '')
+invisible(save_svg_plot(p.depth13, filename.svg, width = 15, height = 10))
+ggsave(filename.png, plot = p.depth13, width = 80, height = 120, units = "mm", dpi = 600)
+
+```
+
+
+### PC1 vs PC3 - K-means cluster facteting
+
+```{r biplot cluster 1_3,  echo=F, message=FALSE, warning=F, include=T, fig.width=10}
+
+pcs <- '1_3'
+p.clust13 <- ggplot() +
+  # Sample points colored by depth
+  geom_point(data = scores, aes(x = PC1, y = PC3, color = kcluster),
+             shape = 16, size = 1.5) +
+  
+  # ellipse over points
+  stat_ellipse(data = scores, aes(x = PC1, y = PC3, color = kcluster), 
+               type = "norm", level = 0.68) +
+  # Loadings arrows
+  geom_segment(data = loadings_scaled,
+               aes(x = 0, y = 0, xend = PC1 * 8, yend = PC3 * 8),
+               arrow = arrow(length = unit(0.2, "cm")),
+               color = "black", linewidth = 0.6) +
+  
+  # Loadings labels
+  geom_text_repel(data = loadings_scaled,
+                  aes(x = PC1 * 8.5, y = PC3 * 8.5, label = variable),
+                  size = 5, color = "black") +
+  
+  # Center lines
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +
+  geom_vline(xintercept = 0, linetype = "dotted", color = "black") +
+  
+  # Axes and theme
+  xlab(paste0("PC1 (", var_expl[1], "%)")) +
+  ylab(paste0("PC3 (", var_expl[3], "%)")) +
+  coord_equal() +
+  scale_colour_manual(values = col_pal) + 
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid = element_blank(),
+    axis.line = element_blank()
+  ) +
+  ggtitle(paste("PCA Biplot Colored by K-means Cluster - ", res_micro, 'µm ', l_text, 
+                sep='')) 
+
+print(p.clust13)
+
+output_dir <- 'plots/PCA_plots_'
+output_subdir <- paste(l_analysis,res_micro, sep = '')
+filename.svg <- paste(output_dir,output_subdir, '/kmeans', pcs,'.svg', sep = '')
+filename.png <- paste(output_dir,output_subdir, '/kmeans', pcs,'.png', sep = '')
+invisible(save_svg_plot(p.clust13, filename.svg, width = 15, height = 10))
+ggsave(filename.png, plot = p.clust13, width = 80, height = 120, units = "mm", dpi = 600)
+```
+
+## Downcore variations of Principal Components
+
+### PC1 
+
+```{r downcore PC1, echo=F, message=FALSE, warning=F, include=T, fig.height=12}
+
+# select PC to plot
+pc_num <- 'PC1'
+# plot downcore
+p.dc1 <- ggplot(scores, aes(x = depth, y = .data[[pc_num]])) +
+  # PCA line
+  geom_line(color = "black", linewidth = 0.3) +
+  
+  # Positive ribbon (blue)
+  geom_ribbon(aes(
+    ymin = 0,
+    ymax = ifelse(.data[[pc_num]] > 0, .data[[pc_num]], 0)
+  ),
+  fill = "#0072B2", alpha = 0.6) +  # Colorblind-safe blue
+  
+  # Negative ribbon (red)
+  geom_ribbon(aes(
+    ymin = ifelse(.data[[pc_num]] < 0, .data[[pc_num]], 0),
+    ymax = 0
+  ),
+  fill = "#D55E00", alpha = 0.6) +  # Colorblind-safe red
+  
+  # Zero line
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey40", linewidth = 0.2) +
+  
+  # Labels and scales
+  labs(
+    title = paste0(pc_num, " Downcore Profile \n", res_micro, 'µm ', l_text),
+    x = "Depth (mm)",
+    y = paste0(pc_num, " Score")
+  ) +
+  scale_x_reverse(expand = expansion(mult = c(0.01, 0.01))) +
+  
+  # Theme and layout
+  coord_flip() +
+  theme_minimal(base_size = 8) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 9, face = "bold"),
+    axis.title = element_text(size = 8),
+    axis.text = element_text(size = 7),
+    axis.text.x = element_text(angle = 0),
+    axis.text.y = element_text(angle = 0),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(5, 5, 5, 5),
+    plot.background = element_blank(),
+    aspect.ratio = 3
+  )
+
+
+print(p.dc1)
+
+output_dir <- 'plots/PCdowncore'
+plot_name <- paste(res_micro, pc_num, sep = '_')
+plot_name.svg <- paste(plot_name,'.svg', sep = '')
+plot_name.png <- paste(plot_name,'.png', sep = '')
+filename.svg <- file.path(output_dir, plot_name.svg)
+filename.png <- file.path(output_dir, plot_name.png)
+
+invisible(save_svg_plot(p.dc1, filename.svg, width = 3, height = 8))
+ggsave(filename.png, plot = p.dc1, width = 80, height = 120, units = "mm", dpi = 600)
+
+```
+
+### PC2
+```{r downcore PC2, echo=F, message=FALSE, warning=F, include=T, fig.height=12}
+
+# select PC to plot
+pc_num <- 'PC2'
+# plot downcore
+p.dc2 <- ggplot(scores, aes(x = depth, y = .data[[pc_num]])) +
+  # PCA line
+  geom_line(color = "black", linewidth = 0.3) +
+  
+  # Positive ribbon (blue)
+  geom_ribbon(aes(
+    ymin = 0,
+    ymax = ifelse(.data[[pc_num]] > 0, .data[[pc_num]], 0)
+  ),
+  fill = "#0072B2", alpha = 0.6) +  # Colorblind-safe blue
+  
+  # Negative ribbon (red)
+  geom_ribbon(aes(
+    ymin = ifelse(.data[[pc_num]] < 0, .data[[pc_num]], 0),
+    ymax = 0
+  ),
+  fill = "#D55E00", alpha = 0.6) +  # Colorblind-safe red
+  
+  # Zero line
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey40", linewidth = 0.2) +
+  
+  # Labels and scales
+  labs(
+    title = paste0(pc_num, " Downcore Profile \n", res_micro, 'µm ', l_text),
+    x = "Depth (mm)",
+    y = paste0(pc_num, " Score")
+  ) +
+  scale_x_reverse(expand = expansion(mult = c(0.01, 0.01))) +
+  
+  # Theme and layout
+  coord_flip() +
+  theme_minimal(base_size = 8) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 9, face = "bold"),
+    axis.title = element_text(size = 8),
+    axis.text = element_text(size = 7),
+    axis.text.x = element_text(angle = 0),
+    axis.text.y = element_text(angle = 0),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(5, 5, 5, 5),
+    plot.background = element_blank(),
+    aspect.ratio = 3
+  )
+
+
+print(p.dc2)
+
+output_dir <- 'plots/PCdowncore'
+plot_name <- paste(res_micro, pc_num, sep = '_')
+plot_name.svg <- paste(plot_name,'.svg', sep = '')
+plot_name.png <- paste(plot_name,'.png', sep = '')
+filename.svg <- file.path(output_dir, plot_name.svg)
+filename.png <- file.path(output_dir, plot_name.png)
+
+invisible(save_svg_plot(p.dc2, filename.svg, width = 3, height = 8))
+ggsave(filename.png, plot = p.dc2, width = 80, height = 120, units = "mm", dpi = 600)
+
+```
+
+### PC3
+```{r downcore PC3, echo=F, message=FALSE, warning=F, include=T, fig.height=12}
+
+# select PC to plot
+pc_num <- 'PC3'
+# plot downcore
+p.dc3 <- ggplot(scores, aes(x = depth, y = .data[[pc_num]])) +
+  # PCA line
+  geom_line(color = "black", linewidth = 0.3) +
+  
+  # Positive ribbon (blue)
+  geom_ribbon(aes(
+    ymin = 0,
+    ymax = ifelse(.data[[pc_num]] > 0, .data[[pc_num]], 0)
+  ),
+  fill = "#0072B2", alpha = 0.6) +  # Colorblind-safe blue
+  
+  # Negative ribbon (red)
+  geom_ribbon(aes(
+    ymin = ifelse(.data[[pc_num]] < 0, .data[[pc_num]], 0),
+    ymax = 0
+  ),
+  fill = "#D55E00", alpha = 0.6) +  # Colorblind-safe red
+  
+  # Zero line
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey40", linewidth = 0.2) +
+  
+  # Labels and scales
+  labs(
+    title = paste0(pc_num, " Downcore Profile \n", res_micro, 'µm ', l_text),
+    x = "Depth (mm)",
+    y = paste0(pc_num, " Score")
+  ) +
+  scale_x_reverse(expand = expansion(mult = c(0.01, 0.01))) +
+  
+  # Theme and layout
+  coord_flip() +
+  theme_minimal(base_size = 8) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 9, face = "bold"),
+    axis.title = element_text(size = 8),
+    axis.text = element_text(size = 7),
+    axis.text.x = element_text(angle = 0),
+    axis.text.y = element_text(angle = 0),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(5, 5, 5, 5),
+    plot.background = element_blank(),
+    aspect.ratio = 3
+  )
+
+
+print(p.dc3)
+
+output_dir <- 'plots/PCdowncore'
+plot_name <- paste(res_micro, pc_num, sep = '_')
+plot_name.svg <- paste(plot_name,'.svg', sep = '')
+plot_name.png <- paste(plot_name,'.png', sep = '')
+filename.svg <- file.path(output_dir, plot_name.svg)
+filename.png <- file.path(output_dir, plot_name.png)
+
+invisible(save_svg_plot(p.dc3, filename.svg, width = 3, height = 8))
+ggsave(filename.png, plot = p.dc3, width = 80, height = 120, units = "mm", dpi = 600)
+```

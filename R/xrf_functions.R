@@ -125,7 +125,8 @@ closed_sum <- function(df_count) {
 # centered log ratio normalization. Input must be from df with count data
 clr_transform <- function(df_count) {
   # Select only element values
-  df_no_pos <- df_count %>% select(-c('position..mm.'))
+  df_no_pos <- df_count %>% 
+    select(-c('position..mm.'))
   
   # Compute geometric mean for each row using vectorized operations
   geometric_means <- exp(rowMeans(log(df_no_pos)))
@@ -160,7 +161,7 @@ select_elements <- function(df, elements) {
 
 
 # Function to create downcore lineplots of all columns of df
-plot_elements <- function(df, df_name = NULL, output_dir = NULL) {
+plot_elements <- function(df, df_name = NULL, output_dir = NULL, xlab = 'value') {
   library(ggplot2)
   library(dplyr)
   library(tidyr)
@@ -183,16 +184,24 @@ plot_elements <- function(df, df_name = NULL, output_dir = NULL) {
                 axis.title = element_text(size = 8),
                 strip.text = element_text(size = 8),
                 legend.position = "none",
-                aspect.ratio = 10) +
+                panel.background = element_rect(fill = 'white'),
+                aspect.ratio = 8,
+                panel.spacing = unit(0.1, 'pt'),
+                panel.border = element_blank(),
+                strip.background = element_rect(
+                  color="white", fill="#c6dbef", size=0.5, linetype="solid"
+                )) +
           labs(title = paste("XRFnorm Analysis -", df_name),
-               y = "Concentration",
+               y = xlab,
                x = "Sample ID (depth)") +
           coord_flip() +
           scale_x_reverse()
-    ggsave(
-      filename = file.path(output_dir, paste0("all_", df_name, ".png")),
-      plot = p,
-      width = 10, height = 8)
+    print(p)
+    if(!is.null(output_dir)){
+      ggsave(
+        filename = file.path(output_dir, paste0("all_", df_name, ".png")),
+        plot = p,
+        width = 10, height = 8)}
 }
 
 # Plot individual elements
@@ -693,11 +702,9 @@ perform_pca2 <- function(df, df_name = NULL, plot_scores = FALSE, plot_loadings 
   # Ensure the input dataframe is numeric
   df_numeric <- df %>% select_if(is.numeric) %>% select(-c(position..mm.))
   
-  # Scale the data
-  df_scaled <- scale(df_numeric)
   
   # Perform PCA
-  pca_result.no.sign <- prcomp(df_scaled, center = TRUE, scale. = TRUE)
+  pca_result.no.sign <- prcomp(df_numeric, center = TRUE, scale. = TRUE)
   pca_result <- fix_pca_signs(pca_result.no.sign)
   pca_result$position..mm. <- df$position..mm.
   
@@ -766,7 +773,7 @@ perform_pca2 <- function(df, df_name = NULL, plot_scores = FALSE, plot_loadings 
     print(summary(pca_result))
     cat("\n \n")
   }
-  pca_result <- fix_pca_signs(pca_result)
+
   return(pca_result)
 }
 

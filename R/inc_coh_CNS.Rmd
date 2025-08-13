@@ -1,0 +1,222 @@
+---
+title: "Evaluating the Relationship Between CNS Carbon and XRF Cr Inc/Coh Ratio"
+author: "Your Name"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(readxl)
+library(fuzzyjoin)
+library(scales)
+library(ggplot2)
+library(tidyr)
+
+```
+
+```{r load, echo = F}
+# Load combined XRF and CNS dataset
+combined_df <- read.csv('data/generated/combined/combined_AC_500_inc_coh.csv')
+
+# Load raw CNS data and convert depth to mm
+raw.cns <- read_excel('data/POS-22-20_CNS.xlsx') %>%
+  mutate(Depth = Depth * 10) %>% # cm to mm
+  rename(position..mm. = Depth) %>%
+  rename_with(~ gsub('[%/\" ]', '', .x), .cols = matches('TN|TC|TS'))
+
+# Select relevant columns
+om.df <- combined_df %>% select(position..mm., TCWt, TSWt, Cr.inc_Cr.coh)
+
+# Correlation for interpolated data
+cor_pearson_interp <- cor(om.df$TCWt, om.df$Cr.inc_Cr.coh, use = "complete.obs")
+cor_spearman_interp <- cor(om.df$TCWt, om.df$Cr.inc_Cr.coh, method = 'spearman', use = "complete.obs")
+
+# Prepare carbon and inc/coh separately
+carbon <- raw.cns %>% select(position..mm., TCWt)
+inc.coh <- combined_df %>% select(position..mm., Cr.inc_Cr.coh)
+
+# Fuzzy match by depth
+inc.coh_matched <- difference_join(
+  carbon, inc.coh,
+  by = "position..mm.",
+  max_dist = 0.25,
+  distance_col = NULL
+) %>%
+  rename(position..mm. = position..mm..x)
+
+
+
+# Correlation for fuzzy-matched data
+cor_pearson_raw <- cor(inc.coh_matched$TCWt, inc.coh_matched$Cr.inc_Cr.coh, use = "complete.obs")
+cor_spearman_raw <- cor(inc.coh_matched$TCWt, inc.coh_matched$Cr.inc_Cr.coh, method = "spearman", use = "complete.obs")
+```
+
+## Correlation Results
+### Interpolated Data to XRF Resolution (500µm)
+```{r output corr XRF, echo = T}
+# Output correlations
+
+cat("- Pearson correlation (TC vs Cr.inc/Cr.coh):", round(cor_pearson_interp, 3), "\n")
+cat("- Spearman correlation (TC vs Cr.inc/Cr.coh):", round(cor_spearman_interp, 3), "\n\n")
+```
+### Interpolated Data to CNS Resolution (2cm)
+```{r output corr CNS, echo =T}
+cat("### Raw CNS Data (Fuzzy Matched)\n")
+cat("- Pearson correlation (TC vs Cr.inc/Cr.coh):", round(cor_pearson_raw, 3), "\n")
+cat("- Spearman correlation (TC vs Cr.inc/Cr.coh):", round(cor_spearman_raw, 3), "\n")
+```
+
+
+### Sulfur - Interpolated to CNS resolution (2cm)
+```{r output corr sulf, echo =F}
+sulfur <- combined_df %>% select(position..mm., S_Ti)
+cns_sulf_matched <- difference_join(
+  carbon, sulfur,
+  by = 'position..mm.',
+  max_dist = 0.25,
+  distance_col = NULL
+) %>%
+  rename(position..mm. = position..mm..x)
+
+cor_tc_s <- cor(cns_sulf_matched$TCWt, cns_sulf_matched$S_Ti, use = "complete.obs")
+cor_s_cr <- cor(cns_sulf_matched$S_Ti, inc.coh_matched$Cr.inc_Cr.coh, use = "complete.obs")
+
+cat("\n### Additional Proxy (S/Ti)\n")
+cat("- TC vs S/Ti:", round(cor_tc_s, 3), "\n")
+cat("- S/Ti vs Cr.inc/Cr.coh:", round(cor_s_cr, 3), "\n")
+```
+
+```{r plotting, echo = F}
+# Rescale Cr inc/coh to match carbon scale
+range_TCWt <- range(inc.coh_matched$TCWt, na.rm = TRUE)
+range_CrRatio <- range(inc.coh_matched$Cr.inc_Cr.coh, na.rm = TRUE)
+
+rescale_Cr <- function(x) {
+  scales::rescale(x, to = range_TCWt, from = range_CrRatio)
+}
+inv_rescale_Cr <- function(x) {
+  scales::rescale(x, to = range_CrRatio, from = range_TCWt)
+}
+
+inc.coh_matched <- inc.coh_matched %>%
+  mutate(inc.coh.rescaled = rescale_Cr(Cr.inc_Cr.coh))
+
+# Convert to long format for plotting
+long_data <- pivot_longer(
+  inc.coh_matched,
+  cols = c(TCWt, inc.coh.rescaled),
+  names_to = "Variable",
+  values_to = "Value"
+)
+
+line_colors <- c(
+  TCWt = "black",
+  inc.coh.rescaled = "steelblue"
+)
+
+cat("\n## Plot: Total Carbon and Cr.inc/Cr.coh\n")
+ggplot(long_data, aes(x = position..mm., y = Value, color = Variable)) +
+  geom_line() +
+  scale_color_manual(
+    values = line_colors,
+    labels = c(
+      TCWt = "Total carbon (%)",
+      inc.coh.rescaled = "CrInc/CrCoh (rescaled)"
+    )
+  ) +
+  scale_y_continuous(
+    name = "Total Carbon (wt%)",
+    sec.axis = sec_axis(~inv_rescale_Cr(.), name = "CrInc/CrCoh")
+  ) +
+  scale_x_reverse() +
+  coord_flip() +
+  theme_minimal() +
+  theme(
+    aspect.ratio = 3,
+    legend.title = element_blank(),
+    axis.text.y.left = element_text(size = 7, color = "black"),
+    axis.text.y.right = element_text(size = 7, color = "steelblue"),
+    axis.title.y.left = element_text(size = 8, color = "black"),
+    axis.title.y.right = element_text(size = 8, color = "steelblue"),
+    axis.text.x = element_text(size = 7),
+    axis.title.x = element_text(size = 8)
+  )
+
+```
+
+## Regression parameters
+```{r regression-manual-cv, message=FALSE, warning=FALSE}
+# Ensure required data is available
+model_df <- inc.coh_matched %>%
+  filter(!is.na(TCWt), !is.na(Cr.inc_Cr.coh))
+
+# Fit linear model
+model <- lm(TCWt ~ Cr.inc_Cr.coh, data = model_df)
+summary_model <- summary(model)
+
+# Output summary
+cat("## Linear Regression Summary\n\n")
+cat("**Formula:** TCWt ~ Cr.inc_Cr.coh\n")
+cat("**Adjusted R²:**", round(summary_model$adj.r.squared, 3), "\n")
+cat("**p-value for Cr.inc_Cr.coh:**", signif(coef(summary_model)[2, 4], 3), "\n")
+cat("**Intercept:**", round(coef(model)[1], 3), "\n")
+cat("**Slope:**", round(coef(model)[2], 3), "\n\n")
+
+
+# Predict using the model
+model_df$predicted <- predict(model, newdata = model_df)
+
+obs_pred_fit <- lm(formula = predicted ~ TCWt, data = model_df)
+```
+
+```{r plot predict obs}
+# Plot predicted vs observed
+library(ggplot2)
+ggplot(model_df, aes(x = TCWt, y = predicted)) +
+  geom_point(alpha = 0.7) +
+  geom_abline(slope = 0.0993, intercept = 3.3222, linetype = "dashed", color = "red") +
+  geom_abline(slope = 1, intercept = 0, color = 'blue') +
+  labs(
+    x = "Observed TC (wt%)",
+    y = "Predicted TC (wt%)",
+    title = "Predicted vs Observed Total Carbon"
+  ) +
+  theme_minimal()
+```
+
+```{r pred vs obs}
+# Manual 10-fold cross-validation
+set.seed(42)
+n <- nrow(model_df)
+folds <- sample(rep(1:10, length.out = n))
+rmse_vals <- numeric(10)
+r2_vals <- numeric(10)
+
+for (i in 1:10) {
+  train <- model_df[folds != i, ]
+  test <- model_df[folds == i, ]
+  
+  m <- lm(TCWt ~ Cr.inc_Cr.coh, data = train)
+  preds <- predict(m, newdata = test)
+  
+  # Calculate RMSE
+  rmse_vals[i] <- sqrt(mean((test$TCWt - preds)^2))
+  
+  # Calculate R²
+  ss_res <- sum((test$TCWt - preds)^2)
+  ss_tot <- sum((test$TCWt - mean(test$TCWt))^2)
+  r2_vals[i] <- 1 - (ss_res / ss_tot)
+}
+
+cat("## Manual 10-Fold Cross-Validation Results\n")
+cat("Mean RMSE:", round(mean(rmse_vals), 3), "\n")
+cat("Mean R²:", round(mean(r2_vals), 3), "\n\n")
+
+# Diagnostic plots
+par(mfrow = c(2, 2))
+plot(model)
+par(mfrow = c(1, 1))
+```

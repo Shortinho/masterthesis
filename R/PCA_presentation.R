@@ -12,20 +12,27 @@ library(scales)
 
 source('xrf_functions.R')
 
-combined <- read.csv('/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/combined/combined_200_fig1.csv')
+#initial parameters for data loading and selection
+res <- 0.5
+res_micro <- 1000* res
+half_res <- res/2
 
-xrf_elem_sel <- c("Fe","Mn",'Ba',"S","Ti","Al","Si","K", 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','Ni','Zn','position..mm.')
+xrf_elem_sel_ZnNi <- c("Fe","Mn",'Ba',"S","Ti","Al","Si","K", 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','Ni','Zn','position..mm.')
+xrf_elem_sel <- c("Fe","Mn",'Ba',"S","Ti","Al","Si","K", 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','position..mm.')
 non_xrf_sel <- c('position..mm.', 'TCWt')
 all_sel <- append(xrf_elem_sel, non_xrf_sel)
 
-res <- 0.5
-half_res <- res/2
+#load corresponding datasets
+path_combined_folder <- '/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/combined/'
+path_combined_file <- paste(path_combined_folder,'combined_',res_micro,'_fig1.csv', sep = '')
+print(paste('Loading of ', res_micro, 'µm data', sep = ''))
+print(paste('Corresponding combined dataframe is', path_combined_file, collapse = '\n'))
+combined <- read.csv(path_combined_file)
 df.raw <- load_raw_data()
+
 df.xrf <- clean_df(df.raw, sel = xrf_elem_sel)
 df.xrf$raw.200 <- NULL
-df.xrf <- tibble(df.xrf$raw.500) %>%
-  select_top_varves()
-
+df.xrf <- tibble(df.xrf$raw.500) 
 df.cs <- closed_sum(df.xrf) 
 df.clr <- clr_transform(df.xrf)
 
@@ -204,17 +211,13 @@ print(p.pca.kclust)
 # ---- downcore plotting ---- 
 
 #prepare data for plotting function
-pc.dc <- perform_pca2(df.multivar)
-pc.dc <- fix_pca_signs(pc.dc)
+pc.dc <- perform_pca2(df.clr)
 scores_df <- as.data.frame(pc.dc$x)
 scores_df$position <- pc.dc$position..mm.
-pca_downcore_plot(pc.dc, pc_num = 'PC1', df_name = 'multivar')
 
-
-pc_num <- 'PC2'
-scores_df[[pc_num]] <- pc.dc$x[, pc_num]
-
-# plot
+# select PC to plot
+pc_num <- 'PC1'
+# plot downcore
 p.pc2 <- ggplot(scores_df, aes(x = position, y = .data[[pc_num]])) +
   # PCA line
   geom_line(color = "black", linewidth = 0.3) +
@@ -238,7 +241,7 @@ p.pc2 <- ggplot(scores_df, aes(x = position, y = .data[[pc_num]])) +
   
   # Labels and scales
   labs(
-    title = paste0(pc_num, " Downcore Profile"),
+    title = paste0(pc_num, " Downcore Profile \n", res_micro, 'µm'),
     x = "Depth (mm)",
     y = paste0(pc_num, " Score")
   ) +
@@ -263,11 +266,15 @@ p.pc2 <- ggplot(scores_df, aes(x = position, y = .data[[pc_num]])) +
 
 
 print(p.pc2)
-output_dir <- 'plots/PCdowncore/'
-filename <- file.path(output_dir, "PC2_downcore.svg")
-save_svg_plot(p.pc2, filename, width = 3, height = 8)
+output_dir <- 'plots/PCdowncore'
+plot_name <- paste(res_micro, pc_num, sep = '_')
+plot_name.svg <- paste(plot_name,'.svg', sep = '')
+plot_name.png <- paste(plot_name,'.png', sep = '')
+filename.svg <- file.path(output_dir, plot_name.svg)
+filename.png <- file.path(output_dir, plot_name.png)
 
-ggsave("plots/PCdowncore/PC2_downcore_profile.png", plot = p, width = 80, height = 120, units = "mm", dpi = 600)
+save_svg_plot(p.pc2, filename.svg, width = 3, height = 8)
+ggsave(filename.png, plot = p.pc2, width = 80, height = 120, units = "mm", dpi = 600)
 
 
 
@@ -308,6 +315,7 @@ km <- kmeans(X, centers = 2, nstart = 25)
 
 combined.elem$kmeans_cluster <- as.factor(km$cluster)
 
+pca_result <- pc.dc
 # ---- Extract scores and loadings ----
 scores <- as_tibble(pca_result$x)
 loadings <- as_tibble(pca_result$rotation, rownames = "variable")

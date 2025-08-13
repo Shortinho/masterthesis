@@ -1,5 +1,7 @@
 # plotting of downcore for figure showing characteristics of dark and light layers (presentation 31st of july)
 
+# this code plots downcore lines of elemental and CNS data
+
 # need to take XRF data only relevant for the plot, and then normalize
 # do this by using the sync_datasets.R script and modifying 'sel' variable
 

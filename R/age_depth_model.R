@@ -15,8 +15,9 @@ str(data)
 ggplot(data, aes(x = mean, y = depth)) +
   geom_ribbon(aes(xmin = min, xmax = max), fill = "lightblue", alpha = 0.5) +
   geom_line(color = "blue", size = 1) +
-  scale_y_reverse() +  # Depth increases downward
+  scale_y_reverse(breaks = seq(0, 130, by = 10)) +  # Depth increases downward
   scale_x_reverse() +
+  
   labs(
     x = "Age (years)",
     y = "Depth (cm)",
@@ -37,7 +38,7 @@ data_top <- data %>%
 ggplot(data_top, aes(x = mean, y = depth)) +
   geom_ribbon(aes(xmin = min, xmax = max), fill = "lightblue", alpha = 0.5) +
   geom_line(color = "blue", size = 1) +
-  scale_y_reverse() +  # Depth increases downward
+  scale_y_reverse(breaks = seq(0, 35, by = 5)) +  # Depth increases downward
   scale_x_reverse() +
   labs(
     x = "Age (years)",

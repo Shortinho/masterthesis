@@ -148,6 +148,12 @@ select_top_varves <- function(df){
     dplyr::filter(`position..mm.` < 350)
 }
 
+select_bottom <- function(df){
+  library(dplyr)
+  short_df <- df %>%
+    dplyr::filter(`position..mm.` > 350 & `position..mm.` < 1231.6)
+}
+
 # give a vector with elements desired and the df
 select_elements <- function(df, elements) {
   print('The following elements are being kept:')
@@ -189,7 +195,7 @@ plot_elements <- function(df, df_name = NULL, output_dir = NULL, xlab = 'value')
                 panel.spacing = unit(0.1, 'pt'),
                 panel.border = element_blank(),
                 strip.background = element_rect(
-                  color="white", fill="#c6dbef", size=0.5, linetype="solid"
+                  color="white", fill="#c6dbef", linewidth=0.5, linetype="solid"
                 )) +
           labs(title = paste("XRFnorm Analysis -", df_name),
                y = xlab,

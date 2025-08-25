@@ -34,11 +34,14 @@ source('xrf_functions.R')
 res <- 0.5 # resolution (mm) of the xrf dataset
 res_micro <- 1000* res
 half_res <- res/2
-l_analysis <- 'top_' # either all core "AC_" or "top_"
+l_analysis <- 'bottom_' # either all core "AC_", "top_" or "bottom_"
+
 if(l_analysis == 'AC_'){
   l_text <- 'all core'
-} else {
+} else if(l_analysis == 'top_') {
   l_text <- 'top 35cm'
+} else{
+  l_text <- 'bottom 35-123.1cm'
 }
 
 xrf_elem_ZnNi <- c('Fe','Mn','Ba','S','Ti','Al','Si','K', 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','Ni','Zn','position..mm.')
@@ -78,6 +81,10 @@ if(l_analysis == 'top_'){
   df.xrf <- df.xrf %>%
     select_top_varves()
 } # selection of top varves
+if(l_analysis == 'bottom_'){
+  df.xrf <- df.xrf %>%
+    select_bottom()
+}
 df.cs <- closed_sum(df.xrf) 
 df.clr <- clr_transform(df.xrf)
 ```

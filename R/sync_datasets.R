@@ -109,6 +109,7 @@ combined_df <- compute_ratios(combined_df, 'Mn', 'Fe')
 combined_df <- compute_ratios(combined_df, 'S', 'Ti')
 combined_df <- compute_ratios(combined_df, 'Fe', 'Ti')
 combined_df <- compute_ratios(combined_df, 'Si', 'Ti')
+combined_df <- compute_ratios(combined_df, 'Mn', 'Ti')
 combined_df <- compute_ratios(combined_df, 'Ba', 'Ti')
 combined_df <- compute_ratios(combined_df, 'Ca', 'Ti')
 combined_df <- compute_ratios(combined_df, 'Ti', 'Al')
@@ -218,11 +219,11 @@ plot_facies_comparison <- function(var) {
 
 #### correlation btw datasets ##################################################
 
-variance_sel <- c("Fe","Mn","S","Ti","Al","Si","K","Rb","Zr","Ca","Sr","P","Ba","Mn_Fe","S_Ti","Fe_Ti","Si_Ti","Ba_Ti", 'Ca_Ti',"Ti_Al",'Si_Al','Zr_Rb', "mean_gray", 'TChl.ug.g',"TNWt","TCWt","TSWt",'TCWt_TNWt', 'position..mm.')
+variance_sel <- c("Fe","Mn","S","Ti","Al","Si","K","Rb","Zr","Ca","Sr","P","Ba","Mn_Fe","S_Ti","Fe_Ti","Si_Ti",'Mn_Ti',"Ba_Ti", 'Ca_Ti',"Ti_Al",'Si_Al','Zr_Rb', "mean_gray", 'TChl.ug.g',"TNWt","TCWt","TSWt",'TCWt_TNWt', 'position..mm.')
 
 combined_df %>% 
   select(any_of(variance_sel)) %>%
-  create_corr_map()
+  create_corr_map(title = '500µm CLR')
 
 #### PCA #########################################################
 

@@ -7,6 +7,8 @@ library(dplyr)
 
 combined <- read.csv('/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/combined/combined_500_inc_coh.csv')
 
+variance_sel <- c("Fe","Mn","S","Ti","Al","Si","K","Rb","Zr","Ca","Sr","P","Ba","Mn_Fe","S_Ti","Fe_Ti","Si_Ti","Ba_Ti", 'Ca_Ti',"Ti_Al",'Si_Al','Zr_Rb', "mean_gray", 'TChl.ug.g',"TNWt","TCWt","TSWt",'TCWt_TNWt', 'position..mm.')
+
 # lagged correlation with grayscale
 sel_vars <- c("Fe", "Mn", "S", "Ti", "Al", "K", "Si", "Ca", "Ba", "Zr", 
               "Mn_Fe", "Fe_Ti", "S_Ti", 'Si_Ti', "Ba_Ti", "Ca_Ti", "Ti_Al", "Zr_Rb", 
@@ -50,7 +52,6 @@ decile_df %>%
 upper_df <- combined[combined$mean_gray >= upper_decile, ]
 lower_df <- combined[combined$mean_gray <= lower_decile, ]
 
-variance_sel <- c("Fe","Mn","S","Ti","Al","Si","K","Rb","Zr","Ca","Sr","P","Ba","Mn_Fe","S_Ti","Fe_Ti","Si_Ti","Ba_Ti", 'Ca_Ti',"Ti_Al",'Si_Al','Zr_Rb', "mean_gray", 'TChl.ug.g',"TNWt","TCWt","TSWt",'TCWt_TNWt', 'position..mm.')
 
 
 
@@ -191,5 +192,87 @@ ggplot(densdf, aes(x = x, y = y)) +
   xlab('mean gray') + 
   ylab('density') +
   theme_minimal()
+
+
+#### Check for differences in variance between top and bottom section
+nopos_bottom <- df.clr %>% filter(position..mm.>326) %>% select(-position..mm.) 
+nopos_top <- df.clr %>% filter(position..mm.<326) %>% select(-position..mm.) 
+
+library(car)
+
+# Run Levene's test for each numeric column
+results_levene <- lapply(names(nopos), function(col) {
+  if (is.numeric(nopos_bottom[[col]]) && is.numeric(nopos_top[[col]])) {
+    df <- data.frame(
+      value = c(nopos_bottom[[col]], nopos_top[[col]]),
+      group = rep(c("nopos", "nopos_top"), c(nrow(nopos_bottom), nrow(nopos_top)))
+    )
+    test <- leveneTest(value ~ group, data = df, center = median) # Brown-Forsythe (more robust)
+    data.frame(
+      column = col,
+      p.value = test$`Pr(>F)`[1]
+    )
+  } else {
+    NULL
+  }
+})
+
+# Combine results
+results_levene_df <- do.call(rbind, results_levene)
+print(results_levene_df)
+
+
+
+#### Centers of facies -  ####
+
+upper_decile <- quantile(combined$mean_gray, upper_q, na.rm = TRUE)
+lower_decile <- quantile(combined$mean_gray, lower_q, na.rm = TRUE)
+
+gs <- combined$mean_gray
+
+mask_upper <- gs >= upper_decile
+mask_lower <- gs <= lower_decile
+
+clr_sel <- c('Fe.y', 'Mn.y', 'S.y', 'Ti.y', 'Al.y', 'Si.y', 'K.y', 'Rb.y', 'Zr.y', 'Ca.y', 'Sr.y', 'P.y', 'Ba.y')
+
+combined.scaled <- scale(combined) %>% data.frame()
+
+# --- Compute means ---
+centers.upper <- combined.scaled %>%
+  filter(mask_upper) %>%
+  summarise(across(all_of(clr_sel), mean, na.rm = TRUE)) %>%
+  mutate(group = "Upper")
+
+centers.lower <- combined.scaled %>%
+  filter(mask_lower) %>%
+  summarise(across(all_of(clr_sel), mean, na.rm = TRUE)) %>%
+  mutate(group = "Lower")
+
+# --- Pivot to long format ---
+centers.upper.long <- centers.upper %>%
+  pivot_longer(-group, names_to = "variable", values_to = "center_value")
+
+centers.lower.long <- centers.lower %>%
+  pivot_longer(-group, names_to = "variable", values_to = "center_value")
+
+# --- Define x limits (optional: same for both plots) ---
+x_limits <- range(c(centers.upper.long$center_value, centers.lower.long$center_value))
+
+# --- Plot Upper ---
+p_upper <- ggplot(centers.upper.long, aes(x = center_value, y = fct_rev(variable))) +
+  geom_col(fill = "#DFC27D") +
+  scale_x_continuous(limits = x_limits) +
+  labs(title = "Upper Decile Means", x = "Mean (Scaled)", y = "Variable") +
+  theme_minimal()
+
+# --- Plot Lower ---
+p_lower <- ggplot(centers.lower.long, aes(x = center_value, y = fct_rev(variable))) +
+  geom_col(fill = "#543005") +
+  scale_x_continuous(limits = x_limits) +
+  labs(title = "Lower Decile Means", x = "Mean (Scaled)", y = "Variable") +
+  theme_minimal()
+
+p_upper
+p_lower
 
 

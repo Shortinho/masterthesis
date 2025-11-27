@@ -81,6 +81,18 @@ clean_df <- function(df_list, sel = NULL) {
   return(cleaned_df)
 }
 
+clean_argon_artifact <- function(df){
+  
+  df_clean <- df %>%
+    filter(
+      !(
+        (position..mm. >= 66 & position..mm. <= 91) |
+          (position..mm. >= 290 & position..mm. <= 316) |
+          (position..mm. >= 950 & position..mm. <= 976)
+      )
+    )
+  return(df_clean)
+}
 # convert to long with only elements
 make_long <- function(df){
   elements <- df %>%

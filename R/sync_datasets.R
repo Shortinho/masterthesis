@@ -10,13 +10,13 @@ sel <- c('position..mm.','Fe', 'Mn', 'S', 'Ti', 'Al', 'Si', 'K', 'Rb', 'Zr', 'Ca
 
 # ---- Sync all datasets for 500µm top 35 ------------------------------------
 #### XRF 0.5mm dataset ####
-res <- 0.5
+res <- 0.2
 half_res <- res/2
 df.raw <- load_raw_data()
 df.xrf <- clean_df(df.raw, sel = sel)
-df.xrf$raw.200 <- NULL
-df.xrf <- tibble(df.xrf$raw.500) %>%
-  select_top_varves()
+df.xrf$raw.500 <- NULL
+df.xrf <- tibble(df.xrf$raw.200) %>%
+  select_bottom()
 
 df.cs <- closed_sum(df.xrf) 
 df.clr <- clr_transform(df.xrf)
@@ -119,7 +119,7 @@ combined_df <- compute_ratios(combined_df, 'TCWt', 'TNWt')
 combined_df <- compute_ratios(combined_df, 'Cr.inc', 'Cr.coh')
 
 # save combined df
-write.csv(combined_df, file = 'data/generated/combined/combined_500_inc_coh.csv')
+write.csv(combined_df, file = 'data/generated/combined/combined_bottom_200_inc_coh.csv')
 
 #### descriptive stats by facies ###############################################
 vars_to_summarize <- c(

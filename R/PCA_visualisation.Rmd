@@ -31,10 +31,10 @@ source('xrf_functions.R')
 ```{r init, echo=FALSE}
 # in this section: choose the resolution and top or all core for subsequent analysis
 
-res <- 0.5 # resolution (mm) of the xrf dataset
+res <- 0.2 # resolution (mm) of the xrf dataset
 res_micro <- 1000* res
 half_res <- res/2
-l_analysis <- 'bottom_' # either all core "AC_", "top_" or "bottom_"
+l_analysis <- 'AC_' # either all core "AC_", "top_" or "bottom_"
 
 if(l_analysis == 'AC_'){
   l_text <- 'all core'
@@ -85,6 +85,10 @@ if(l_analysis == 'bottom_'){
   df.xrf <- df.xrf %>%
     select_bottom()
 }
+if(res == 0.2 && l_analysis == "AC_"){
+  df.xrf <- clean_argon_artifact(df.xrf)
+}
+
 df.cs <- closed_sum(df.xrf) 
 df.clr <- clr_transform(df.xrf)
 ```

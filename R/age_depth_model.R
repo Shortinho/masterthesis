@@ -14,7 +14,7 @@ str(data)
 # Plot whole core
 ggplot(data, aes(x = mean, y = depth)) +
   geom_ribbon(aes(xmin = min, xmax = max), fill = "lightblue", alpha = 0.5) +
-  geom_line(color = "blue", size = 1) +
+  geom_line(color = "blue", linewidth = 1) +
   scale_y_reverse(breaks = seq(0, 130, by = 10)) +  # Depth increases downward
   scale_x_reverse() +
   

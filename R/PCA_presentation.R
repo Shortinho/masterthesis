@@ -14,84 +14,136 @@ source('xrf_functions.R')
 
 #initial parameters for data loading and selection
 res <- 0.5
-res_micro <- 1000* res
-half_res <- res/2
+res_micro <- 1000 * res # micrometers equivalent
+half_res <- res/2 
+l_analysis <- 'AC_' # either all core "AC_", "top_" or "bottom_"
 
+# case application for labelling
+if(l_analysis == 'AC_'){
+  l_text <- 'all core'
+} else if(l_analysis == 'top_') {
+  l_text <- 'top 35cm'
+} else{
+  l_text <- 'bottom 35-123.1cm'
+}
+
+# selection of variables for testing
+# all XRF
 xrf_elem_sel_ZnNi <- c("Fe","Mn",'Ba',"S","Ti","Al","Si","K", 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','Ni','Zn','position..mm.')
+# without Zn and Ni
 xrf_elem_sel <- c("Fe","Mn",'Ba',"S","Ti","Al","Si","K", 'Ca', 'Rb', 'Zr', 'Sr', 'P', 'Ba','position..mm.')
 non_xrf_sel <- c('position..mm.', 'TCWt')
 all_sel <- append(xrf_elem_sel, non_xrf_sel)
 
+sel <- xrf_elem_sel
+features <- sel[!sel %in% c("position..mm.")]
+print(paste('xrf resolution =', res_micro, 'µm'))
+print(paste('analysis will be done on', l_text))
+print('Feature selection:')
+cat(features, sep = ', ')
+
+
 #load corresponding datasets
+# Combined dataframe
 path_combined_folder <- '/Users/maxshore/Documents/Unibe/MasterThesis/masterthesis/R/data/generated/combined/'
-path_combined_file <- paste(path_combined_folder,'combined_',res_micro,'_fig1.csv', sep = '')
-print(paste('Loading of ', res_micro, 'µm data', sep = ''))
+path_combined_file <- paste(path_combined_folder,'combined_',l_analysis, res_micro,'_inc_coh.csv', sep = '')
+print(paste('Loading of ', res_micro, 'µm data', 'for ', l_text, sep = ''))
 print(paste('Corresponding combined dataframe is', path_combined_file, collapse = '\n'))
 combined <- read.csv(path_combined_file)
-df.raw <- load_raw_data()
+run.name <- paste(l_analysis, res_micro, sep = '')
 
-df.xrf <- clean_df(df.raw, sel = xrf_elem_sel)
-df.xrf$raw.200 <- NULL
-df.xrf <- tibble(df.xrf$raw.500) 
+# Raw XRF import and process
+df.raw <- load_raw_data()
+df.xrf <- clean_df(df.raw, sel = sel)
+
+if(res_micro == 500){
+  df.xrf$raw.200 <- NULL
+  df.xrf <- tibble(df.xrf$raw.500)
+} else {
+  df.xrf$raw.500 <- NULL
+  df.xrf <- tibble(df.xrf$raw.200)
+} # selection of dataframe
+if(l_analysis == 'top_'){
+  df.xrf <- df.xrf %>%
+    select_top_varves()
+} # selection of top varves
+if(l_analysis == 'bottom_'){
+  df.xrf <- df.xrf %>%
+    select_bottom()
+}
+if(res == 0.2 && l_analysis == "AC_"){
+  df.xrf <- clean_argon_artifact(df.xrf)
+  combined  <- clean_argon_artifact(combined)
+  print('WARNING: Removed artifacts from argon in XRF data. If you want to preserve all the datapoints, comment this if statement')
+  
+}
+
 df.cs <- closed_sum(df.xrf) 
 df.clr <- clr_transform(df.xrf)
 
 
 
-# ---- Compute ratios on closed-sum data ----
-df.clr <- df.cs %>%
-  compute_ratios('Fe', 'Ti') %>%
-  compute_ratios('Ca', 'Ti') %>%
-  compute_ratios('S', 'Ti') %>%
-  compute_ratios('Fe', 'Mn') %>%
-  compute_ratios('Ti', 'Al')
+# # ---- Compute ratios on closed-sum data ----
+# df.clr <- df.cs %>%
+#   compute_ratios('Fe', 'Ti') %>%
+#   compute_ratios('Ca', 'Ti') %>%
+#   compute_ratios('S', 'Ti') %>%
+#   compute_ratios('Fe', 'Mn') %>%
+#   compute_ratios('Ti', 'Al')
 
 
 
-# Match TCWt from combined using position
-df.clr <- df.clr %>%
-  left_join(combined %>% select(position..mm., TCWt),
-            by = c("position..mm." = "position..mm."))
+# # Match TCWt from combined using position
+# df.clr <- df.clr %>%
+#   left_join(combined %>% select(position..mm., TCWt),
+#             by = c("position..mm." = "position..mm."))
+
+# Perform K-means Clustering
+X <- scale(select(df.clr, -c(position..mm.)))
+km <- kmeans(X, centers = 2, nstart = 25)
+km.clusters <- as.factor(km$cluster)
+
+# Ward's Tree Hierarchical Clustering
+dist_mat <- dist(X)
+hc <- hclust(dist_mat, method = "ward.D2")
+h.clusters <- as.factor(cutree(hc, k = 2))
+
 # ---- Select final variables for PCA ----
 df.pca <- df.clr %>%
-  select(
-    Fe_Ti, Ca_Ti, S_Ti, Fe_Mn, Ti_Al,  # ratios
-    Si, Ba, K, Ti,          # clr-transformed elements
-    TCWt
+  select(any_of(features)
   ) %>%
   na.omit()
 df.multivar <- df.pca %>%
   mutate(position..mm. = df.clr$position..mm.)
 
 df.multivar.clust <- df.multivar %>%
-  mutate(kmeans_cluster = df_clust$kmeans_cluster) %>%
-  mutate(ward_hcluster = df_clust$hclust_cluster) %>%
+  mutate(kmeans_cluster = km.clusters) %>%
+  mutate(ward_hcluster = h.clusters) %>%
   mutate(facies = combined$facies_class)
   
 
-write.csv(df.multivar, file = 'data/generated/multivar/multivar_10')
 
 
-# ---- Run PCA ----
-pca_result <- PCA(df.pca, scale.unit = TRUE, graph = FALSE)
-
-# ---- Plot PCA with fviz ---- ----
-fviz_pca_biplot(pca_result,
-                geom.ind = "point",       # show points only (no text)
-                pointshape = 21,
-                pointsize = 2,
-                fill.ind = "gray70",      # light gray for sample points
-                col.ind = "black",
-                col.var = "black",        # variables in black
-                arrowsize = 0.8,
-                repel = TRUE) +           # repel labels for variables only
-  theme_minimal(base_size = 14) +
-  theme(panel.grid = element_blank(),
-        legend.position = "none") +
-  ggtitle("PCA of Geochemical Proxies - 500µm dataset") +
-  labs(x = paste0("PC1 (", round(pca_result$eig[1, 2], 1), "%)"),
-       y = paste0("PC2 (", round(pca_result$eig[2, 2], 1), "%)"))
-
+# # ---- Run PCA ----
+# pca_result <- PCA(df.pca, scale.unit = TRUE, graph = FALSE)
+# 
+# # ---- Plot PCA with fviz ---- ----
+# fviz_pca_biplot(pca_result,
+#                 geom.ind = "point",       # show points only (no text)
+#                 pointshape = 21,
+#                 pointsize = 2,
+#                 fill.ind = "gray70",      # light gray for sample points
+#                 col.ind = "black",
+#                 col.var = "black",        # variables in black
+#                 arrowsize = 0.8,
+#                 repel = TRUE) +           # repel labels for variables only
+#   theme_minimal(base_size = 14) +
+#   theme(panel.grid = element_blank(),
+#         legend.position = "none") +
+#   ggtitle("PCA of Geochemical Proxies - 500µm dataset") +
+#   labs(x = paste0("PC1 (", round(pca_result$eig[1, 2], 1), "%)"),
+#        y = paste0("PC2 (", round(pca_result$eig[2, 2], 1), "%)"))
+# 
 
 
 
@@ -107,20 +159,57 @@ scores <- as_tibble(pca_result$x)
 loadings <- as_tibble(pca_result$rotation, rownames = "variable")
 
 # Rescale loadings to match sample space
-loadings_scaled <- loadings %>%
-  mutate(
-    PC1 = PC1 * pca_result$sdev[1],
-    PC2 = PC2 * pca_result$sdev[2]
-  )
+# loadings_scaled <- loadings %>%
+#   mutate(
+#     PC1 = PC1 * pca_result$sdev[1],
+#     PC2 = PC2 * pca_result$sdev[2]
+#   )
 
 #  Add metadata for faceting
+# scores <- scores %>%
+#   mutate(depth = df.clr$position..mm.) %>%
+#   mutate(facies = combined$facies_class) %>%
+#   mutate(kcluster = df.multivar.clust$kmeans_cluster) %>%
+#   mutate(hcluster = df.multivar.clust$ward_hcluster)
+
+# var_expl <- round(100 * pca_result$sdev^2 / sum(pca_result$sdev^2), 1)
+
+# add depth column to the generated scores df at first column
 scores <- scores %>%
   mutate(depth = df.clr$position..mm.) %>%
-  mutate(facies = combined$facies_class) %>%
-  mutate(kcluster = df.multivar.clust$kmeans_cluster) %>%
-  mutate(hcluster = df.multivar.clust$ward_hcluster)
+  relocate(depth)
 
-var_expl <- round(100 * pca_result$sdev^2 / sum(pca_result$sdev^2), 1)
+# export PCA scores, loadings, and clustering dataframes to a csv
+output_dir <- 'data/generated/multivar'
+
+filename_scores <- paste('Scores', run.name, sep = '_')
+filepath_scores <- file.path(output_dir, filename_scores)
+write.csv(scores, file = filepath_scores)
+
+filename_loadings <- paste('Loadings', run.name, sep = '_')
+filepath_loadings <- file.path(output_dir, filename_loadings)
+write.csv(loadings, file = filepath_loadings)
+
+filename_clust <- paste('Cluster', run.name, sep = '_')
+filepath_clust<- file.path(output_dir, filename_clust)
+write.csv(df.multivar.clust, file = filepath_clust)
+
+write.table(scores, file = filepath_scores, sep = ",", row.names = FALSE, col.names = FALSE)
+
+
+# replace the depth column by the corresponding age
+
+age_model <- read_table("data/age_depth/POS-22-20_with selection_124_ages.txt", col_names = TRUE)
+age_model$depth <- age_model$depth * 10
+
+scores_age <- scores %>%
+  arrange(depth) %>%
+  mutate(age = approx(age_model$depth, age_model$median, xout = depth)$y) %>%
+  relocate(age)
+
+filename_scores_age <- paste('Scores_age', run.name, sep = '_')
+filepath_scores_age <- file.path(output_dir, filename_scores_age)
+write.table(scores_age, file = filepath_scores_age, sep = ",", row.names = FALSE, col.names = FALSE)
 
 # ---- plot pca biplot with ggplot----
 # Assuming loadings_scaled has already been created by scaling with sdev

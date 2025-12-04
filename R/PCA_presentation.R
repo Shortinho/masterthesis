@@ -8,7 +8,7 @@ library(tibble)
 library(ggrepel)  # for optional smart labels
 library(svglite)
 library(scales)
-
+library(readr)
 
 source('xrf_functions.R')
 
@@ -51,6 +51,7 @@ print(paste('Loading of ', res_micro, 'µm data', 'for ', l_text, sep = ''))
 print(paste('Corresponding combined dataframe is', path_combined_file, collapse = '\n'))
 combined <- read.csv(path_combined_file)
 run.name <- paste(l_analysis, res_micro, sep = '')
+paste('Run name:', run.name)
 
 # Raw XRF import and process
 df.raw <- load_raw_data()
@@ -71,25 +72,26 @@ if(l_analysis == 'bottom_'){
   df.xrf <- df.xrf %>%
     select_bottom()
 }
-if(res == 0.2 && l_analysis == "AC_"){
-  df.xrf <- clean_argon_artifact(df.xrf)
-  combined  <- clean_argon_artifact(combined)
-  print('WARNING: Removed artifacts from argon in XRF data. If you want to preserve all the datapoints, comment this if statement')
-  
-}
+# if(res == 0.2 && l_analysis == "AC_"){
+#   df.xrf <- clean_argon_artifact(df.xrf)
+#   combined  <- clean_argon_artifact(combined)
+#   print('WARNING: Removed artifacts from argon in XRF data. If you want to preserve all the datapoints, comment this if statement')
+# 
+# }
 
 df.cs <- closed_sum(df.xrf) 
 df.clr <- clr_transform(df.xrf)
 
 
 
-# # ---- Compute ratios on closed-sum data ----
-# df.clr <- df.cs %>%
-#   compute_ratios('Fe', 'Ti') %>%
-#   compute_ratios('Ca', 'Ti') %>%
-#   compute_ratios('S', 'Ti') %>%
-#   compute_ratios('Fe', 'Mn') %>%
-#   compute_ratios('Ti', 'Al')
+# ---- Compute ratios on closed-sum data ----
+df.clr <- df.cs %>%
+  compute_ratios('Fe', 'Ti') %>%
+  compute_ratios('Ca', 'Ti') %>%
+  compute_ratios('S', 'Ti') %>%
+  compute_ratios('Fe', 'Mn') %>%
+  compute_ratios('Ti', 'Al') %>%
+  compute_ratios('S', 'Ti')
 
 
 
@@ -202,14 +204,26 @@ write.table(scores, file = filepath_scores, sep = ",", row.names = FALSE, col.na
 age_model <- read_table("data/age_depth/POS-22-20_with selection_124_ages.txt", col_names = TRUE)
 age_model$depth <- age_model$depth * 10
 
+# prepare export with age-depth in the df. This will then be used for Acycle time series analysis
+# scores
 scores_age <- scores %>%
   arrange(depth) %>%
   mutate(age = approx(age_model$depth, age_model$median, xout = depth)$y) %>%
   relocate(age)
 
-filename_scores_age <- paste('Scores_age', run.name, sep = '_')
+  
+filename_scores_age <- paste('Scores_age', run.name, '.txt', sep = '_')
 filepath_scores_age <- file.path(output_dir, filename_scores_age)
 write.table(scores_age, file = filepath_scores_age, sep = ",", row.names = FALSE, col.names = FALSE)
+
+# clr data (plus ratios)
+df.clr <- df.clr %>% 
+  mutate(depth = df.clr$position..mm.) %>%
+  arrange(depth) %>%
+  mutate(age = approx(age_model$depth, age_model$median, xout = depth)$y) %>%
+  relocate(depth) %>%
+  relocate(age) %>%
+  select(-position..mm.)
 
 # ---- plot pca biplot with ggplot----
 # Assuming loadings_scaled has already been created by scaling with sdev
